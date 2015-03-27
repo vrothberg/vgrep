@@ -8,8 +8,8 @@ free to copy, change, distribute and share.
 
 ##Usage Example:
 
-###Grep for a symbol
-You can grep for all occurrences of a specified string 'FOO' in your current
+###Searching a symbol
+You can search for all occurrences of a specified string 'FOO' in your current
 directory by calling **vgrep FOO**.  You can also specify multiple arguments
 to search for.  vgrep prints the occurrences in the format "Index  Source File
 Source Line  Content".  The index can later be used to open a specific location
@@ -26,10 +26,9 @@ If you're outside a Git repository or just don't like 'git grep' pass
 **'--no-git'** to use to 'grep' instead.
 
 ###Show indexed location
-To visit a specific location you can use **'--show'** and the corresponding
-index.  vgrep will then open the location with the editor set in your
-*enviroment*.  vgrep defaults to vim if the *EDITOR* environment variable is not
-set.
+To visit a specific location pass **'--show INDEX'**.  vgrep will then open the
+location pointed to by *INDEX* with the editor that is set in your *enviroment*.
+vgrep defaults to *vim* if the *EDITOR* environment variable is not set.
 
 ```
 [~/linux/kernel/irq]$ export EDITOR=gedit
