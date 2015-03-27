@@ -1,7 +1,7 @@
 # vgrep
 
 **vgrep** is a Python script to search strings in a given source tree.  It is
-inspired by **cgvg**, but faster by making use of 'git grep'.
+inspired by **cgvg**, but faster by using 'git grep'.
 
 The script is in an early version.  Feedback & patches are always welcome.  Feel
 free to copy, change, distribute and share.
