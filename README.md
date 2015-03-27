@@ -7,7 +7,7 @@ inspired by **cgvg**, but faster by making use of 'git grep'.
 
 ###Grep for a symbol
 You can grep for all occurences of a specified string 'FOO' in your current
-directory by calling *'vgrep FOO'*.  vgrep prints the occurences in the format
+directory by calling **'vgrep FOO'**.  vgrep prints the occurences in the format
 "Index  Source File  Source Line  Content".  The index can later be used to open
 a specific location in an editor.  vgrep caches the last call, so that you can
 re-open your previous call by simply calling vgrep without arguments.
