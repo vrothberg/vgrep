@@ -42,5 +42,4 @@ set.
 [~/linux/kernel/irq]$ vgrep --show 2
 ```
 
-![](https://github.com/vrothberg/vgrep/screenshots/show_example.png)
-
+![](https://github.com/vrothberg/vgrep/blob/master/screenshots/show_example.png)
