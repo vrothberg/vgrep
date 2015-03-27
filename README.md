@@ -38,5 +38,9 @@ index.  vgrep will then open the location with the editor set in your
 set.
 
 ```
-[~/linux/kernel/irq]$ vgrep --show 3
+[~/linux/kernel/irq]$ export EDITOR=gedit
+[~/linux/kernel/irq]$ vgrep --show 2
 ```
+
+![](https://github.com/vrothberg/vgrep/screenshots/show_example.png)
+
