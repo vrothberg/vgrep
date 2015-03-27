@@ -190,7 +190,7 @@ def grep(symbol, nogit=False):
     """'git grep' for symbol in current Git tree and return the output. If
     %nogit is set 'grep -rIn' is called instead of 'git grep -n'."""
     if nogit is True:
-        return execute("grep -rIn %s" % symbol).rsplit("\n")
+        return execute("grep -rIn %s ." % symbol).rsplit("\n")
     return execute("git grep -In %s" % symbol).rsplit("\n")
 
 
