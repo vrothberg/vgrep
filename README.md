@@ -1,14 +1,17 @@
 # vgrep
 
-**vgrep** is a Python script to grep for strings in a given source tree.  It is
+**vgrep** is a Python script to search strings in a given source tree.  It is
 inspired by **cgvg**, but faster by making use of 'git grep'.
+
+The script is in early version.  Feedback & patches are always welcome.  Feel
+free to copy, change, distribute and share.
 
 ##Usage Example:
 
 ###Grep for a symbol
-You can grep for all occurences of a specified string 'FOO' in your current
-directory by calling **vgrep FOO**.  You can also specify multiple arguements
-to search for.  vgrep prints the occurences in the format "Index  Source File
+You can grep for all occurrences of a specified string 'FOO' in your current
+directory by calling **vgrep FOO**.  You can also specify multiple arguments
+to search for.  vgrep prints the occurrences in the format "Index  Source File
 Source Line  Content".  The index can later be used to open a specific location
 in an editor.  vgrep caches the results of the last call, so that you can
 re-open your previous call by simply calling **vgrep** without arguments.
