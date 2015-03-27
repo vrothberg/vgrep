@@ -7,14 +7,18 @@ inspired by **cgvg**, but faster by making use of 'git grep'.
 
 ###Grep for a symbol
 You can grep for all occurences of a specified string 'FOO' in your current
-directory by calling **'vgrep FOO'**.  vgrep prints the occurences in the format
-"Index  Source File  Source Line  Content".  The index can later be used to open
-a specific location in an editor.  vgrep caches the last call, so that you can
-re-open your previous call by simply calling vgrep without arguments.
+directory by calling **$vgrep FOO**.  You can also specify multiple arguements
+to search for.  vgrep prints the occurences in the format "Index  Source File
+Source Line  Content".  The index can later be used to open a specific location
+in an editor.  vgrep caches the results of the last call, so that you can
+re-open your previous call by simply calling **$vgrep** without arguments.
 
-Note that vgrep pipes the output to 'less' for more than 100 indexes.  If you're
-outside a Git repository pass **'--no-git'** to use to 'grep' instead of 'git
-grep'.
+Note that vgrep pipes the output to 'less' for more than 100 indexes.  You can
+turn this behavior off with **'--no-less'** so that the entire output will be
+printed to the console.
+
+If you're outside a Git repository or just don't like 'git grep' pass
+**'--no-git'** to use to 'grep' instead.
 
 ```
 [~/linux/kernel/irq]$ vgrep request_irq
