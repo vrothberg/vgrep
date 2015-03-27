@@ -1,18 +1,20 @@
 # vgrep
 
-vgrep is a Python script to grep for strings in a given source tree.  It is
-mainly inspired by cgvg, but faster by making use of 'git grep'.
+**vgrep** is a Python script to grep for strings in a given source tree.  It is
+inspired by **cgvg**, but faster by making use of 'git grep'.
 
 ##Usage Example:
 
 ###Grep for a symbol
 You can grep for all occurences of a specified string 'FOO' in your current
-directory by passing 'FOO' to vgrep.  vgrep prints the occurences in the
-format "Index  Source File  Source Line  Content".  The index can later be used
-to open a specific location in an editor.  vgrep caches the last call, so that
-you can re-open your previous call by simply calling vgrep without arguments.
+directory by calling *'vgrep FOO'*.  vgrep prints the occurences in the format
+"Index  Source File  Source Line  Content".  The index can later be used to open
+a specific location in an editor.  vgrep caches the last call, so that you can
+re-open your previous call by simply calling vgrep without arguments.
 
-Note that vgrep pipes the output to 'less' for more than 100 indexes.
+Note that vgrep pipes the output to 'less' for more than 100 indexes.  If you're
+outside a Git repository pass **'--no-git'** to use to 'grep' instead of 'git
+grep'.
 
 ```
 [~/linux/kernel/irq]$ vgrep request_irq
@@ -26,9 +28,9 @@ Index  Source File  Source Line  Content
 ```
 
 ###Show indexed location
-To visit a specific location we can use '--show' and the corresponding index.
-vgrep will then open the location with the editor set in your enviroment.  If
-no editor is set, vgrep defaults to vim.
+To visit a specific location we can use **'--show'** and the corresponding
+index.  vgrep will then open the location with the editor set in your
+*enviroment*.  If no editor is set, vgrep defaults to vim.
 
 ```
 [~/linux/kernel/irq]$ vgrep --show 3
