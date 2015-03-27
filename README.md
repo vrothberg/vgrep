@@ -23,16 +23,7 @@ printed to the console.
 If you're outside a Git repository or just don't like 'git grep' pass
 **'--no-git'** to use to 'grep' instead.
 
-```
-[~/linux/kernel/irq]$ vgrep request_irq
-Index  Source File  Source Line  Content
-
-0      devres.c     129          *  free IRQs allocated with devm_request_irq().
-1      manage.c     1391         *  free_irq - free an interrupt allocated with request_irq
-2      manage.c     1572         ret = request_irq(irq, handler, flags, name, dev_id);
-3      manage.c     483          KERN_ERR "enable_irq before setup/request_irq: irq %u\n", irq))
-4      manage.c     559          int can_request_irq(unsigned int irq, unsigned long irqflags)
-```
+![](https://github.com/vrothberg/vgrep/blob/master/screenshots/grep_example.png)
 
 ###Show indexed location
 To visit a specific location we can use **'--show'** and the corresponding
