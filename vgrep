@@ -1,0 +1,211 @@
+#!/usr/bin/env python
+
+"""This module is a reimpementation of the ancient cgvg perl scripts.  vgrep
+needs to be called in a Git tree."""
+
+# (c) 2015 Valentin Rothberg <valentinrothberg@gmail.com>
+#
+# Licensed under the terms of the GNU GPL License version 3
+
+import os
+import re
+import sys
+import pickle
+import tempfile
+from optparse import OptionParser
+from subprocess import Popen, PIPE, STDOUT
+
+
+CACHE = "/tmp/.vgrep_cache"
+EDITOR = os.getenv("EDITOR", "vim")
+
+
+class SLOC(object):
+    """Represents a SLOC."""
+    def __init__(self, string):
+        object.__init__(self)
+        self.file = SLOC.parse_file(string)
+        self.line = SLOC.parse_line(string)
+        self.cont = SLOC.parse_cont(string).lstrip()
+
+    @staticmethod
+    def parse_file(string):
+        """Return file name of %string (from 'git grep -n')."""
+        return re.findall(r"^(.+):\d+:.+", string)[0]
+
+    @staticmethod
+    def parse_line(string):
+        """Return file name of %string (from 'git grep -n')."""
+        return re.findall(r"^.+:(\d+):.+", string)[0]
+
+    @staticmethod
+    def parse_cont(string):
+        """Return file name of %string (from 'git grep -n')."""
+        return re.findall(r"^.+:\d+:(.+)$", string)[0]
+
+    @staticmethod
+    def sort(slocs):
+        """Return the sorted %code_list with the source file as primary and the
+        source line as secondary key."""
+        return sorted(slocs, key=lambda x: (x.file, x.line))
+
+
+def parse_options():
+    """User interface of this module."""
+    usage = "%prog [arguments]"
+    parser = OptionParser(usage=usage)
+    parser.add_option('-s', '--show', dest='show', action='store',
+                      default="",
+                      help="Show indexed location in the system's editor.")
+    parser.add_option('', '--no-git', dest='nogit', action='store_true',
+                      default="False",
+                      help="Use 'grep' instead of 'git grep'.")
+    (opts, args) = parser.parse_args()
+    return (opts, args)
+
+
+def main():
+    """Main routine of this module."""
+    opts, args = parse_options()
+
+    if opts.show:
+        slocs = load()
+        if not slocs:
+            sys.exit("Please grep for a symbol first")
+
+        index = None
+        try:
+            index = int(opts.show)
+            sloc = slocs[index]
+        except (ValueError, IndexError):
+            sys.exit("Please specify a valid index")
+
+        sloc = slocs[index]
+        cmd = "%s +%s %s" % (EDITOR, sloc.line, sloc.file)
+        pop = Popen(cmd, shell=True)
+        pop.wait()
+        sys.exit(0)
+
+    if args:
+        hits = []
+        for arg in args:
+            hits.extend(grep(arg, opts.nogit))
+
+        slocs = []
+        for hit in [x for x in hits if x]:
+            slocs.append(SLOC(hit))
+        slocs = SLOC.sort(slocs)
+        dump(slocs)
+        print_slocs(slocs)
+
+    else:
+        hits = load()
+        if not hits:
+            sys.exit(0)
+        print_slocs(hits)
+
+
+def yellow(string, light=0):
+    """Color %string."""
+    if light:
+        return "\033[93m%s\033[39m" % string
+    return "\033[33m%s\033[39m" % string
+
+
+def red(string, light=0):
+    """Color %string."""
+    if light:
+        return "\033[91m%s\033[39m" % string
+    return "\033[31m%s\033[0m" % string
+
+
+def blue(string, light=0):
+    """Color %string."""
+    if light:
+        return "\033[94m%s\033[39m" % string
+    return "\033[34m%s\033[0m" % string
+
+
+def print_slocs(slocs):
+    """Print SLOCS on terminal."""
+    max_indx = len(str(len(slocs))) + 1
+    max_file = 0
+    max_line = 0
+
+    for sloc in slocs:
+        if len(sloc.file) > max_file:
+            max_file = len(sloc.file) + 1
+        if len(sloc.line) > max_line:
+            max_line = len(sloc.line) + 1
+
+    if len("Index ") > max_indx:
+        max_indx = len("Index ") + 1
+    if len("Source File ") > max_file:
+        max_file = len("Source File ") + 1
+    if len("Source Line ") > max_indx:
+        max_line = len("Source Line ") + 1
+
+    out = []
+    out.append(yellow("Index " + " " * (max_indx - len("Index "))))
+    out.append(blue("Source File " + " " * (max_file - len("Source File "))))
+    out.append(red("Source Line " + " " * (max_line - len("Source Line "))))
+    out.append("Content")
+    out.append("\n\n")
+
+    for i in range(len(slocs)):
+        light = i % 2
+        out.append(yellow(i, light) + " " * (max_indx - len(str(i))))
+        out.append(blue(slocs[i].file, light) + " " * (max_file -
+                                                       len(slocs[i].file)))
+        out.append(red(slocs[i].line, light)  + " " * (max_line -
+                                                       len(slocs[i].line)))
+        out.append(slocs[i].cont)
+        out.append("\n")
+
+    if len(slocs) <= 100:
+        for item in out:
+            sys.stdout.write(item)
+        return
+
+    tmp = tempfile.mkstemp()[1]
+    with open(tmp, "w") as fdc:
+        for item in out:
+            fdc.write(item)
+
+    cmd = "less -R %s" % tmp
+    pop = Popen(cmd, shell=True)
+    pop.wait()
+
+
+def execute(cmd):
+    """Execute %cmd and return stdout.  Exit in case of error."""
+    pop = Popen(cmd, stdout=PIPE, stderr=STDOUT, shell=True)
+    (stdout, _) = pop.communicate()  # wait until finished
+    if pop.returncode != 0:
+        sys.exit(stdout)
+    return stdout
+
+
+def grep(symbol, nogit=False):
+    """'git grep' for symbol in current Git tree and return the output. If
+    %nogit is set 'grep -rIn' is called instead of 'git grep -n'."""
+    if nogit is True:
+        return execute("grep -rIn %s" % symbol).rsplit("\n")
+    return execute("git grep -In %s" % symbol).rsplit("\n")
+
+
+def dump(data):
+    """Dump %data to the local cache."""
+    pickle.dump(data, open(CACHE, "wb"))
+
+
+def load():
+    """Load and return data from the local cache."""
+    try:
+        return pickle.load(open(CACHE, "rb"))
+    except IOError:
+        return None
+
+
+if __name__ == "__main__":
+    main()
