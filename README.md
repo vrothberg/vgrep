@@ -14,7 +14,7 @@ directory by calling **vgrep FOO**.  You can also specify multiple arguments
 to search for.  vgrep prints the occurrences in the format "Index  Source File
 Source Line  Content".  The index can later be used to open a specific location
 in an editor.  vgrep caches the results of the last call, so that you can
-re-open your previous call by simply calling **vgrep** without arguments.
+re-open your previous results by simply calling **vgrep** without arguments.
 
 Note that vgrep pipes the output to 'less' for more than 100 indexes.  You can
 turn this behavior off with **'--no-less'** so that the entire output will be
