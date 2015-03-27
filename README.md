@@ -34,7 +34,8 @@ Index  Source File  Source Line  Content
 ###Show indexed location
 To visit a specific location we can use **'--show'** and the corresponding
 index.  vgrep will then open the location with the editor set in your
-*enviroment*.  If no editor is set, vgrep defaults to vim.
+*enviroment*.  vgrep defaults to vim if the *EDITOR* environment variable is not
+set.
 
 ```
 [~/linux/kernel/irq]$ vgrep --show 3
