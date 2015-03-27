@@ -26,7 +26,7 @@ If you're outside a Git repository or just don't like 'git grep' pass
 **'--no-git'** to use to 'grep' instead.
 
 ###Show indexed location
-To visit a specific location we can use **'--show'** and the corresponding
+To visit a specific location you can use **'--show'** and the corresponding
 index.  vgrep will then open the location with the editor set in your
 *enviroment*.  vgrep defaults to vim if the *EDITOR* environment variable is not
 set.
