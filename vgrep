@@ -19,6 +19,10 @@ from subprocess import Popen, PIPE, STDOUT
 CACHE = "/tmp/.vgrep_cache"
 EDITOR = os.getenv("EDITOR", "vim")
 
+RE_FILE = re.compile(r"^(.+):\d+:.+")
+RE_LINE = re.compile(r"^.+:(\d+):.+")
+RE_CONT = re.compile(r"^.+:\d+:(.+)$")
+
 
 class SLOC(object):
     """Represents a SLOC."""
@@ -31,17 +35,17 @@ class SLOC(object):
     @staticmethod
     def parse_file(string):
         """Return file name of %string (from 'git grep -n')."""
-        return re.findall(r"^(.+):\d+:.+", string)[0]
+        return RE_FILE.findall(string)[0]
 
     @staticmethod
     def parse_line(string):
         """Return file name of %string (from 'git grep -n')."""
-        return re.findall(r"^.+:(\d+):.+", string)[0]
+        return RE_LINE.findall(string)[0]
 
     @staticmethod
     def parse_cont(string):
         """Return file name of %string (from 'git grep -n')."""
-        return re.findall(r"^.+:\d+:(.+)$", string)[0]
+        return RE_CONT.findall(string)[0]
 
     @staticmethod
     def sort(slocs):
@@ -136,6 +140,7 @@ def dim(string, light=0):
         return string
     return "\033[2m%s\033[0m" % string
 
+
 def underline(string):
     """Underline %string."""
     return "\033[4m%s\033[0m" % string
@@ -176,7 +181,7 @@ def print_slocs(slocs, noless=False):
                    " " * (max_indx - len(str(i))))
         out.append(blue(slocs[i].file, light) +
                    " " * (max_file - len(slocs[i].file)))
-        out.append(red(slocs[i].line, light)  +
+        out.append(red(slocs[i].line, light) +
                    " " * (max_line - len(slocs[i].line)))
         out.append(dim(slocs[i].cont, light))
         out.append("\n")
