@@ -62,10 +62,10 @@ def parse_options():
                       default="",
                       help="show indexed location in the system's editor")
     parser.add_option('', '--no-git', dest='nogit', action='store_true',
-                      default="False",
+                      default=False,
                       help="use 'grep' instead of 'git grep'")
     parser.add_option('', '--no-less', dest='noless', action='store_true',
-                      default="False",
+                      default=False,
                       help="do not use 'less' for big ouputs (>100) and just "
                            "print on the console")
     (opts, args) = parser.parse_args()
@@ -102,6 +102,7 @@ def main():
         slocs = []
         for hit in [x for x in hits if x]:
             slocs.append(SLOC(hit))
+
         slocs = SLOC.sort(slocs)
         dump(slocs)
         print_slocs(slocs, opts.noless)
@@ -146,17 +147,21 @@ def underline(string):
     return "\033[4m%s\033[0m" % string
 
 
-def print_slocs(slocs, noless=False):
+def print_slocs(slocs, noless):
     """Print SLOCS on terminal."""
-    max_indx = len(str(len(slocs))) + 1
+    max_indx = len(str(len(slocs))) + 2
     max_file = 0
     max_line = 0
+    doless = False
+
+    if len(slocs) > 100 and not noless:
+        doless = True
 
     for sloc in slocs:
         if len(sloc.file) > max_file:
-            max_file = len(sloc.file) + 1
+            max_file = len(sloc.file) + 2
         if len(sloc.line) > max_line:
-            max_line = len(sloc.line) + 1
+            max_line = len(sloc.line) + 2
 
     if len("Index ") > max_indx:
         max_indx = len("Index ") + 1
@@ -165,40 +170,46 @@ def print_slocs(slocs, noless=False):
     if len("Source Line ") > max_indx:
         max_line = len("Source Line ") + 1
 
-    out = []
-    out.append(underline(yellow("Index")) +
-               " " * (max_indx - len("Index")))
-    out.append(underline(blue("Source File")) +
-               " " * (max_file - len("Source File")))
-    out.append(underline(red("Source Line")) +
-               " " * (max_line - len("Source Line")))
-    out.append(underline(dim("Content")))
-    out.append("\n\n")
+    fdc = sys.stdout
+    tmp = None
+    if doless is True:
+        tmp = tempfile.mkstemp()[1]
+        fdc = open(tmp, "w")
+
+    fdc.write(underline(yellow("Index")))
+    fill(fdc, max_indx - len("Index"))
+    fdc.write(underline(blue("Source File")))
+    fill(fdc, max_file - len("Source File"))
+    fdc.write(underline(red("Source Line")))
+    fill(fdc, max_line - len("Source Line"))
+    fdc.write(underline(dim("Content")))
+    fdc.write("\n\n")
 
     for i in range(len(slocs)):
         light = i % 2
-        out.append(yellow(i, light) +
-                   " " * (max_indx - len(str(i))))
-        out.append(blue(slocs[i].file, light) +
-                   " " * (max_file - len(slocs[i].file)))
-        out.append(red(slocs[i].line, light) +
-                   " " * (max_line - len(slocs[i].line)))
-        out.append(dim(slocs[i].cont, light))
-        out.append("\n")
 
-    if len(slocs) <= 100 or noless is True:
-        for item in out:
-            sys.stdout.write(item)
+        fdc.write(yellow(i, light))
+        fill(fdc, max_indx - len(str(i)))
+        fdc.write(blue(slocs[i].file, light))
+        fill(fdc, max_file - len(slocs[i].file))
+        fdc.write(red(slocs[i].line, light))
+        fill(fdc, max_line - len(slocs[i].line))
+        fdc.write(dim(slocs[i].cont, light))
+        fdc.write("\n")
+
+    fdc.close()
+
+    if not doless:
         return
-
-    tmp = tempfile.mkstemp()[1]
-    with open(tmp, "w") as fdc:
-        for item in out:
-            fdc.write(item)
 
     cmd = "less -R %s" % tmp
     pop = Popen(cmd, shell=True)
     pop.wait()
+
+
+def fill(fdc, cnt):
+    """Write %cnt spaces to %fdc."""
+    fdc.write(" " * cnt)
 
 
 def execute(cmd):
@@ -213,7 +224,7 @@ def execute(cmd):
 def grep(symbol, nogit=False):
     """'git grep' for symbol in current Git tree and return the output. If
     %nogit is set 'grep -rIn' is called instead of 'git grep -n'."""
-    if nogit is True:
+    if nogit:
         return execute("grep -rIn %s ." % symbol).rsplit("\n")
     return execute("git grep -In %s" % symbol).rsplit("\n")
 
