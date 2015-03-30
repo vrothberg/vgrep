@@ -71,9 +71,6 @@ def parse_options():
                       default=False,
                       help="do not use 'less' for big ouputs (>100) and just "
                            "print on the console")
-    parser.add_option('-w', '--word-regexp', dest='word', action='store_true',
-                      default=False,
-                      help="Match the pattern only at a word boundry.")
     (opts, args) = parser.parse_args()
     return (opts, args)
 
