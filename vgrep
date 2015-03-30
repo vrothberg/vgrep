@@ -241,7 +241,7 @@ def grep(symbol, nogit=False, word=False):
         word_string = ""
     if nogit:
         return execute("grep -rIn %s %s ." % (word_string, symbol)).rsplit("\n")
-    return execute("git grep -In %s %s" % (word_string, symbol)).rsplit("\n")
+    return execute("git grep --no-color -In %s %s" % (word_string, symbol)).rsplit("\n")
 
 
 def dump(data):
