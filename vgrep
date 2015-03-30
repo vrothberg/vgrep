@@ -71,6 +71,10 @@ def parse_options():
                       default=False,
                       help="do not use 'less' for big ouputs (>100) and just "
                            "print on the console")
+    parser.add_option('', '--no-header', dest='noheader', action='store_true',
+                      default=False,
+                      help="do not print the pretty header at the top of the "
+                           "results.")
     (opts, args) = parser.parse_args()
     return (opts, args)
 
@@ -111,13 +115,13 @@ def main():
 
         slocs = SLOC.sort(slocs)
         dump(slocs)
-        print_slocs(slocs, opts.noless)
+        print_slocs(slocs, opts.noless, opts.noheader)
 
     else:
         slocs = load()
         if not slocs:
             sys.exit(0)
-        print_slocs(slocs, opts.noless)
+        print_slocs(slocs, opts.noless, opts.noheader)
 
 
 def yellow(string, light=0):
@@ -153,7 +157,7 @@ def underline(string):
     return "\033[4m%s\033[0m" % string
 
 
-def print_slocs(slocs, noless):
+def print_slocs(slocs, noless, noheader):
     """Print SLOCS on terminal."""
     max_indx = len(str(len(slocs))) + 2
     max_file = 0
@@ -169,27 +173,28 @@ def print_slocs(slocs, noless):
         if len(sloc.line) > max_line:
             max_line = len(sloc.line) + 2
 
-    if len("Index ") > max_indx:
-        max_indx = len("Index ") + 1
-    if len("Source File ") > max_file:
-        max_file = len("Source File ") + 1
-    if len("Source Line ") > max_indx:
-        max_line = len("Source Line ") + 1
-
     fdc = sys.stdout
     tmp = None
     if doless is True:
         tmp = tempfile.mkstemp()[1]
         fdc = open(tmp, "w")
 
-    fdc.write(underline(yellow("Index")))
-    fill(fdc, max_indx - len("Index"))
-    fdc.write(underline(blue("Source File")))
-    fill(fdc, max_file - len("Source File"))
-    fdc.write(underline(red("Source Line")))
-    fill(fdc, max_line - len("Source Line"))
-    fdc.write(underline(dim("Content")))
-    fdc.write("\n\n")
+    if noheader:
+        if len("Index ") > max_indx:
+            max_indx = len("Index ") + 1
+        if len("Source File ") > max_file:
+            max_file = len("Source File ") + 1
+        if len("Source Line ") > max_indx:
+            max_line = len("Source Line ") + 1
+
+        fdc.write(underline(yellow("Index")))
+        fill(fdc, max_indx - len("Index"))
+        fdc.write(underline(blue("Source File")))
+        fill(fdc, max_file - len("Source File"))
+        fdc.write(underline(red("Source Line")))
+        fill(fdc, max_line - len("Source Line"))
+        fdc.write(underline(dim("Content")))
+        fdc.write("\n\n")
 
     for i in range(len(slocs)):
         light = i % 2
