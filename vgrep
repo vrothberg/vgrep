@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 """This module is a reimpementation of the ancient cgvg perl scripts.
 Visit https://github.com/vrothberg/vgrep for more information."""
