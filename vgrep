@@ -68,6 +68,9 @@ def parse_options():
                       default=False,
                       help="do not use 'less' for big ouputs (>100) and just "
                            "print on the console")
+    parser.add_option('-w', '--word-regexp', dest='word', action='store_true',
+                      default=False,
+                      help="Match the pattern only at a word boundry.")
     (opts, args) = parser.parse_args()
     return (opts, args)
 
@@ -97,7 +100,7 @@ def main():
     if args:
         hits = []
         for arg in args:
-            hits.extend(grep(arg, opts.nogit))
+            hits.extend(grep(arg, opts.nogit, opts.word))
 
         slocs = []
         for hit in [x for x in hits if x]:
@@ -221,12 +224,16 @@ def execute(cmd):
     return stdout
 
 
-def grep(symbol, nogit=False):
+def grep(symbol, nogit=False, word=False):
     """'git grep' for symbol in current Git tree and return the output. If
     %nogit is set 'grep -rIn' is called instead of 'git grep -n'."""
+    if word:
+        word_string = "-w"
+    else:
+        word_string = ""
     if nogit:
-        return execute("grep -rIn %s ." % symbol).rsplit("\n")
-    return execute("git grep -In %s" % symbol).rsplit("\n")
+        return execute("grep -rIn %s %s ." % (word_string, symbol)).rsplit("\n")
+    return execute("git grep -In %s %s" % (word_string, symbol)).rsplit("\n")
 
 
 def dump(data):
