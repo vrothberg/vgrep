@@ -109,7 +109,7 @@ def main():
 
     else:
         slocs = load()
-        if not hits:
+        if not slocs:
             sys.exit(0)
         print_slocs(slocs, opts.noless)
 
