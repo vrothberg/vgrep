@@ -74,7 +74,7 @@ def parse_options():
     parser.add_option('', '--no-header', dest='noheader', action='store_true',
                       default=False,
                       help="do not print the pretty header at the top of the "
-                           "results.")
+                           "results")
     (opts, args) = parser.parse_args()
     return (opts, args)
 
@@ -179,7 +179,7 @@ def print_slocs(slocs, noless, noheader):
         tmp = tempfile.mkstemp()[1]
         fdc = open(tmp, "w")
 
-    if noheader:
+    if noheader is False:
         if len("Index ") > max_indx:
             max_indx = len("Index ") + 1
         if len("Source File ") > max_file:
