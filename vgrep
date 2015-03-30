@@ -104,7 +104,10 @@ def main():
 
         slocs = []
         for hit in [x for x in hits if x]:
-            slocs.append(SLOC(hit))
+            try:
+                slocs.append(SLOC(hit))
+            except Exception as err:
+                print >> sys.stderr, "Could not parse '%s'\n%s" % (hit, err)
 
         slocs = SLOC.sort(slocs)
         dump(slocs)
