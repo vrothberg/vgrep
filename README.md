@@ -15,6 +15,8 @@ to search for.  vgrep prints the occurrences in the format "Index  Source File
 Source Line  Content".  The index can later be used to open a specific location
 in an editor.  vgrep caches the results of the last call, so that you can
 re-open your previous results by simply calling **vgrep** without arguments.
+Add **'--word-regexp'** if you want to match the pattern 'FOO' only at word
+boundaries (e.g., to avoid substring matches).
 
 ![](https://github.com/vrothberg/vgrep/blob/master/screenshots/grep_example.png)
 
