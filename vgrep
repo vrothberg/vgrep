@@ -15,8 +15,8 @@ import tempfile
 from optparse import OptionParser
 from subprocess import Popen, PIPE, STDOUT
 
-
-CACHE = "/tmp/.vgrep_cache"
+HOMEDIR = os.getenv("HOME")
+CACHE = HOMEDIR + "/.cache/vgrep"
 EDITOR = os.getenv("EDITOR", "vim")
 
 RE_FILE = re.compile(r"^(.+):\d+:.+")
