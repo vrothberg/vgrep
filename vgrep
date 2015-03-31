@@ -159,7 +159,7 @@ def underline(string):
 
 def print_slocs(slocs, noless, noheader):
     """Print SLOCS on terminal."""
-    max_indx = len(str(len(slocs))) + 2
+    max_indx = len(str(len(slocs)))
     max_file = 0
     max_line = 0
     doless = False
@@ -169,9 +169,9 @@ def print_slocs(slocs, noless, noheader):
 
     for sloc in slocs:
         if len(sloc.file) > max_file:
-            max_file = len(sloc.file) + 2
+            max_file = len(sloc.file)
         if len(sloc.line) > max_line:
-            max_line = len(sloc.line) + 2
+            max_line = len(sloc.line)
 
     fdc = sys.stdout
     tmp = None
@@ -181,30 +181,27 @@ def print_slocs(slocs, noless, noheader):
 
     if noheader is False:
         if len("Index ") > max_indx:
-            max_indx = len("Index ") + 1
+            max_indx = len("Index")
         if len("Source File ") > max_file:
-            max_file = len("Source File ") + 1
+            max_file = len("Source File")
         if len("Source Line ") > max_indx:
-            max_line = len("Source Line ") + 1
+            max_line = len("Source Line")
 
-        fdc.write(underline(yellow("Index")))
-        fill(fdc, max_indx - len("Index"))
-        fdc.write(underline(blue("Source File")))
-        fill(fdc, max_file - len("Source File"))
-        fdc.write(underline(red("Source Line")))
-        fill(fdc, max_line - len("Source Line"))
+        fdc.write(underline(yellow('{0:>{1}}'.format("Index", max_indx))))
+        fdc.write(' ')
+        fdc.write(underline(blue('{0:<{1}}'.format("Source File", max_file))))
+        fdc.write(' ')
+        fdc.write(underline(red('{0:>{1}}'.format("Source Line", max_line))))
+        fdc.write(' ')
         fdc.write(underline(dim("Content")))
-        fdc.write("\n\n")
+        fdc.write("\n")
 
     for i in range(len(slocs)):
         light = i % 2
 
-        fdc.write(yellow(i, light))
-        fill(fdc, max_indx - len(str(i)))
-        fdc.write(blue(slocs[i].file, light))
-        fill(fdc, max_file - len(slocs[i].file))
-        fdc.write(red(slocs[i].line, light))
-        fill(fdc, max_line - len(slocs[i].line))
+        fdc.write(yellow('{0:>{1}} '.format(i, max_indx), light))
+        fdc.write(blue('{0:<{1}} '.format(slocs[i].file, max_file), light))
+        fdc.write(red('{0:>{1}} '.format(slocs[i].line, max_line), light))
         fdc.write(dim(slocs[i].cont, light))
         fdc.write("\n")
 
@@ -216,11 +213,6 @@ def print_slocs(slocs, noless, noheader):
     cmd = "less -R %s" % tmp
     pop = Popen(cmd, shell=True)
     pop.wait()
-
-
-def fill(fdc, cnt):
-    """Write %cnt spaces to %fdc."""
-    fdc.write(" " * cnt)
 
 
 def execute(cmd):
