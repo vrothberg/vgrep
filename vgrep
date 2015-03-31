@@ -239,6 +239,8 @@ def grep(symbol, nogit=False, word=False):
 
 def dump(data):
     """Dump %data to the local cache."""
+    if not os.path.exists(os.path.dirname(CACHE)):
+        os.makedirs(os.path.dirname(CACHE))
     pickle.dump(data, open(CACHE, "wb"))
 
 
