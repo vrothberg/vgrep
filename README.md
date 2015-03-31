@@ -38,7 +38,7 @@ vgrep defaults to *vim* if the *EDITOR* environment variable is not set.
 
 ```
 [~/linux/kernel/irq]$ export EDITOR=gedit
-[~/linux/kernel/irq]$ vgrep --show 2
+[~/linux/kernel/irq]$ vgrep --show 4
 ```
 
 ![](https://github.com/vrothberg/vgrep/blob/master/screenshots/show_example.png)
