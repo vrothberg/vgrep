@@ -164,7 +164,7 @@ def print_slocs(slocs, noless, noheader):
     max_line = 0
     doless = False
 
-    if len(slocs) > 100 and not noless:
+    if not noless:
         doless = True
 
     for sloc in slocs:
