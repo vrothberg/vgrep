@@ -110,7 +110,7 @@ def main():
         for hit in [x for x in hits if x]:
             try:
                 slocs.append(SLOC(hit))
-            except Exception as err:
+            except IndexError as err:
                 print >> sys.stderr, "Could not parse '%s'\n%s" % (hit, err)
 
         slocs = SLOC.sort(slocs)
@@ -235,13 +235,14 @@ def execute(cmd):
 def grep(symbol, nogit=False, word=False):
     """'git grep' for symbol in current Git tree and return the output. If
     %nogit is set 'grep -rIn' is called instead of 'git grep -n'."""
+    word_string = ""
     if word:
         word_string = "-w"
-    else:
-        word_string = ""
     if nogit:
-        return execute("grep -rIn %s %s ." % (word_string, symbol)).rsplit("\n")
-    return execute("git grep --no-color -In %s %s" % (word_string, symbol)).rsplit("\n")
+        return execute("grep -rIn %s %s ." %
+                       (word_string, symbol)).rsplit("\n")
+    return execute("git grep --no-color -In %s %s" %
+                   (word_string, symbol)).rsplit("\n")
 
 
 def dump(data):
