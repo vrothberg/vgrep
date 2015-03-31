@@ -29,7 +29,7 @@ class SLOC(object):
     def __init__(self, string):
         object.__init__(self)
         self.file = SLOC.parse_file(string)
-        self.line = SLOC.parse_line(string)
+        self.line = int(SLOC.parse_line(string))
         self.cont = SLOC.parse_cont(string).lstrip()
 
     @staticmethod
@@ -170,8 +170,8 @@ def print_slocs(slocs, noless, noheader):
     for sloc in slocs:
         if len(sloc.file) > max_file:
             max_file = len(sloc.file) + 2
-        if len(sloc.line) > max_line:
-            max_line = len(sloc.line) + 2
+        if len(str(sloc.line)) > max_line:
+            max_line = len(str(sloc.line)) + 2
 
     fdc = sys.stdout
     tmp = None
@@ -204,7 +204,7 @@ def print_slocs(slocs, noless, noheader):
         fdc.write(blue(slocs[i].file, light))
         fill(fdc, max_file - len(slocs[i].file))
         fdc.write(red(slocs[i].line, light))
-        fill(fdc, max_line - len(slocs[i].line))
+        fill(fdc, max_line - len(str(slocs[i].line)))
         fdc.write(dim(slocs[i].cont, light))
         fdc.write("\n")
 
