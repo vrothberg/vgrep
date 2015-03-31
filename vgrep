@@ -210,7 +210,7 @@ def print_slocs(slocs, noless, noheader):
     if not doless:
         return
 
-    cmd = "less -R %s" % tmp
+    cmd = "less -FRXS %s" % tmp
     pop = Popen(cmd, shell=True)
     pop.wait()
 
