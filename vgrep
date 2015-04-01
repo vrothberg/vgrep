@@ -34,17 +34,20 @@ class SLOC(object):
     @staticmethod
     def parse_file(string):
         """Return file name of %string (from 'git grep -n')."""
-        return RE_FILE.findall(string)[0]
+        reg = RE_FILE.search(string)
+        return reg.groups()[0]
 
     @staticmethod
     def parse_line(string):
         """Return file name of %string (from 'git grep -n')."""
-        return RE_LINE.findall(string)[0]
+        reg = RE_LINE.search(string)
+        return reg.groups()[0]
 
     @staticmethod
     def parse_cont(string):
         """Return file name of %string (from 'git grep -n')."""
-        return RE_CONT.findall(string)[0]
+        reg = RE_CONT.search(string)
+        return reg.groups()[0]
 
     @staticmethod
     def sort(slocs):
