@@ -11,7 +11,6 @@ import os
 import re
 import sys
 import pickle
-import tempfile
 from optparse import OptionParser
 from subprocess import Popen, PIPE, STDOUT
 
@@ -174,10 +173,10 @@ def print_slocs(slocs, noless, noheader):
             max_line = len(sloc.line)
 
     fdc = sys.stdout
-    tmp = None
+    pop = None
     if doless is True:
-        tmp = tempfile.mkstemp()[1]
-        fdc = open(tmp, "w")
+        pop = Popen("less -FRXS", shell=True, stdin=PIPE)
+        fdc = pop.stdin
 
     if noheader is False:
         if len("Index") > max_indx:
@@ -206,13 +205,8 @@ def print_slocs(slocs, noless, noheader):
         fdc.write("\n")
 
     fdc.close()
-
-    if not doless:
-        return
-
-    cmd = "less -FRXS %s" % tmp
-    pop = Popen(cmd, shell=True)
-    pop.wait()
+    if doless is True:
+        pop.wait()
 
 
 def execute(cmd):
