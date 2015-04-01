@@ -82,7 +82,7 @@ def main():
     """Main routine of this module."""
     opts, args = parse_options()
 
-    if opts.show:
+    if opts.show is True:
         slocs = load()
         if not slocs:
             sys.exit("Please grep for a symbol first")
@@ -161,10 +161,6 @@ def print_slocs(slocs, noless, noheader):
     max_indx = len(str(len(slocs)))
     max_file = 0
     max_line = 0
-    doless = False
-
-    if not noless:
-        doless = True
 
     for sloc in slocs:
         if len(sloc.file) > max_file:
@@ -174,7 +170,7 @@ def print_slocs(slocs, noless, noheader):
 
     fdc = sys.stdout
     pop = None
-    if doless is True:
+    if noless is False:
         pop = Popen("less -FRXS", shell=True, stdin=PIPE)
         fdc = pop.stdin
 
@@ -201,7 +197,7 @@ def print_slocs(slocs, noless, noheader):
         fdc.write("\n")
 
     fdc.close()
-    if doless is True:
+    if noless is False:
         pop.wait()
 
 
@@ -218,9 +214,9 @@ def grep(symbol, nogit=False, word=False):
     """'git grep' for symbol in current Git tree and return the output. If
     %nogit is set 'grep -rIn' is called instead of 'git grep -n'."""
     word_string = ""
-    if word:
+    if word is True:
         word_string = "-w"
-    if nogit:
+    if nogit is True:
         return execute("grep -rIn %s %s ." %
                        (word_string, symbol)).rsplit("\n")
     return execute("git grep --no-color -In %s %s" %
