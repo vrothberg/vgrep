@@ -121,13 +121,16 @@ def main():
             # child process
             dump(slocs)
             sys.exit(0)
-        print_slocs(slocs, opts.noless, opts.noheader)
 
     else:
         slocs = load()
         if not slocs:
             sys.exit(0)
+
+    try:
         print_slocs(slocs, opts.noless, opts.noheader)
+    except IOError:
+        pass
 
 
 def yellow(string, light=0):
