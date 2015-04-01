@@ -116,7 +116,11 @@ def main():
                 print >> sys.stderr, "Could not parse '%s'\n%s" % (hit, err)
 
         slocs = SLOC.sort(slocs)
-        dump(slocs)
+        pid = os.fork()
+        if not pid:
+            # child process
+            dump(slocs)
+            sys.exit(0)
         print_slocs(slocs, opts.noless, opts.noheader)
 
     else:
