@@ -24,7 +24,7 @@ If you're outside a Git repository or just don't like 'git grep' pass
 **'--no-git'** to use to 'grep' instead.
 
 If you are working on a terminal with few columns, or have long filenames or
-paths to search, use the **'--no-headers'** option to compress the whitespace a
+paths to search, use the **'--no-header'** option to compress the whitespace a
 bit to help fit more information on each line.
 
 ###Show indexed location
