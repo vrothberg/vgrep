@@ -85,7 +85,7 @@ def main():
     """Main routine of this module."""
     opts, args = parse_options()
 
-    if opts.show is True:
+    if opts.show:
         slocs = load()
         if not slocs:
             sys.exit("Please grep for a symbol first")
