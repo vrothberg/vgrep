@@ -244,7 +244,8 @@ def load():
     """Load and return data from the local cache."""
     try:
         return pickle.load(open(CACHE, "rb"))
-    except IOError:
+    except Exception:
+        print >> sys.stderr, "Could not load cached data"
         return None
 
 
