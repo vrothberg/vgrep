@@ -20,10 +20,6 @@ boundaries (e.g., to avoid substring matches).
 
 ![](https://github.com/vrothberg/vgrep/blob/master/screenshots/grep_example.png)
 
-Note that vgrep pipes the output to 'less' for outputs bigger than 100 indexes.
-You can turn this behavior off with **'--no-less'** so that the entire output
-will be printed on the console.
-
 If you're outside a Git repository or just don't like 'git grep' pass
 **'--no-git'** to use to 'grep' instead.
 
