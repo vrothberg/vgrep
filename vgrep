@@ -164,7 +164,7 @@ def print_slocs(slocs, noless, noheader):
     max_line = 0
     doless = False
 
-    if len(slocs) > 100 and not noless:
+    if not noless:
         doless = True
 
     for sloc in slocs:
@@ -210,7 +210,7 @@ def print_slocs(slocs, noless, noheader):
     if not doless:
         return
 
-    cmd = "less -R %s" % tmp
+    cmd = "less -FRXS %s" % tmp
     pop = Popen(cmd, shell=True)
     pop.wait()
 
