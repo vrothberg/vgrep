@@ -191,13 +191,13 @@ def print_slocs(slocs, noless, noheader):
         if len("Index") > max_indx:
             max_indx = len("Index")
         if len("Source File") > max_file:
-            max_file = len("Source File")
+            max_file = len("File")
         if len("Source Line") > max_indx:
-            max_line = len("Source Line")
+            max_line = len("Line")
 
         fdc.write(underline(yellow('{0:>{1}}'.format("Index", max_indx))) + " ")
-        fdc.write(underline(blue('{0:<{1}}'.format("Source File", max_file))) + " ")
-        fdc.write(underline(red('{0:>{1}}'.format("Source Line", max_line))) + " ")
+        fdc.write(underline(blue('{0:<{1}}'.format("File", max_file))) + " ")
+        fdc.write(underline(red('{0:>{1}}'.format("Line", max_line))) + " ")
         fdc.write(underline(dim("Content")) + "\n")
 
     for i in range(len(slocs)):
