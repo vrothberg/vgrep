@@ -66,6 +66,9 @@ def parse_options():
     parser.add_option('-w', '--word-regexp', dest='word', action='store_true',
                       default=False,
                       help="match the pattern only at a word boundary")
+    parser.add_option('-f', '--file-regexp', dest='file', action='store',
+                      default='',
+                      help="grep only in files that match the pattern")
     parser.add_option('', '--no-git', dest='nogit', action='store_true',
                       default=False,
                       help="use 'grep' instead of 'git grep'")
@@ -106,7 +109,7 @@ def main():
     if args:
         hits = []
         for arg in args:
-            hits.extend(grep(arg, opts.nogit, opts.word))
+            hits.extend(grep(arg, opts.nogit, opts.word, opts.file))
 
         slocs = []
         for hit in [x for x in hits if x]:
@@ -220,17 +223,21 @@ def execute(cmd):
     return stdout
 
 
-def grep(symbol, nogit=False, word=False):
+def grep(symbol, nogit, word, filep):
     """'git grep' for symbol in current Git tree and return the output. If
     %nogit is set 'grep -rIn' is called instead of 'git grep -n'."""
     word_string = ""
+    file_pattern = ""
     if word is True:
         word_string = "-w"
+
     if nogit is True:
-        return execute("grep -rIn %s %s ." %
-                       (word_string, symbol)).rsplit("\n")
-    return execute("git grep --no-color -In %s %s" %
-                   (word_string, symbol)).rsplit("\n")
+        return execute("grep -rIn %s %s ." % (word_string, symbol)).rsplit("\n")
+
+    if filep:
+        file_pattern = '-- "*%s*"' % filep
+    return execute("git grep --no-color -In %s %s %s" %
+                   (word_string, symbol, file_pattern)).rsplit("\n")
 
 
 def dump(data):
