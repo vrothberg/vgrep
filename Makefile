@@ -2,7 +2,7 @@ TARGET = vgrep
 PREFIX ?= /usr/local
 BINDIR ?= $(PREFIX)/bin
 
-install: vgrep
+install:
 	install -D $(TARGET) $(BINDIR)
 
 uninstall:
