@@ -1,7 +1,7 @@
 # vgrep
 
 **vgrep** is a Python script to search strings in a given source tree.  It is
-inspired by **cgvg**, but faster by using 'git grep'.
+inspired by **cgvg**, but faster by using *git grep*.
 
 Feedback & patches are always welcome.  Feel free to copy, change, distribute
 and share.
@@ -10,14 +10,15 @@ and share.
 
 ###Searching a symbol
 
-- **vgrep FOO** to search *FOO* in your current directory.  You may also specify
-  multiple arguments that you can search for.
+- **vgrep FOO** to search *FOO* in your current directory.  You can also specify
+  multiple arguments that you may search for.
 
 - The output has the format "**Index** **File** **Line** **Content**", whereas
   the index can later be used to open the specific location in an editor.
 
 - Run vgrep without arguments to see the results of the last query.
 
+An example could look as follows:
 ![](https://github.com/vrothberg/vgrep/blob/master/screenshots/grep_example.png)
 
 ####More options:
@@ -27,7 +28,7 @@ and share.
 
 - **'--no-git'** to use to *grep* instead (required outside a Git repository).
 
-- **'--no-header'** option to compress the whitespace a bit to help fit more
+- **'--no-header'** to compress the whitespace a bit to help fit more
   information on each line.  This option is helpful if you are working on a
   terminal with few columns, or have long filenames or paths to search.
 
