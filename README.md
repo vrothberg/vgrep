@@ -3,29 +3,36 @@
 **vgrep** is a Python script to search strings in a given source tree.  It is
 inspired by **cgvg**, but faster by using 'git grep'.
 
-The script is in an early version.  Feedback & patches are always welcome.  Feel
-free to copy, change, distribute and share.
+Feedback & patches are always welcome.  Feel free to copy, change, distribute
+and share.
 
 ##Usage Example:
 
 ###Searching a symbol
-You can search for all occurrences of a specified string 'FOO' in your current
-directory by calling **vgrep FOO**.  You can also specify multiple arguments to
-search for.  vgrep prints the occurrences in the format "Index File Line
-Content".  The index can later be used to open a specific location in an editor.
-vgrep caches the results of the last call, so that you can re-open your previous
-results by simply calling **vgrep** without arguments.  Add **'--word-regexp'**
-if you want to match the pattern 'FOO' only at word boundaries (e.g., to avoid
-    substring matches).
+
+- **vgrep FOO** to search *FOO* in your current directory.  You may also specify
+  multiple arguments that you can search for.
+
+- The output has the format "**Index** **File** **Line** **Content**", whereas
+  the index can later be used to open the specific location in an editor.
+
+- Run vgrep without arguments to see the results of the last query.
 
 ![](https://github.com/vrothberg/vgrep/blob/master/screenshots/grep_example.png)
 
-If you're outside a Git repository or just don't like 'git grep' pass
-**'--no-git'** to use to 'grep' instead.
+####More options:
 
-If you are working on a terminal with few columns, or have long filenames or
-paths to search, use the **'--no-header'** option to compress the whitespace a
-bit to help fit more information on each line.
+- **'--word-regexp'** if you want to match the pattern *FOO* only at word
+  boundaries (e.g., to avoid substring matches).
+
+- **'--no-git'** to use to *grep* instead (required outside a Git repository).
+
+- **'--no-header'** option to compress the whitespace a bit to help fit more
+  information on each line.  This option is helpful if you are working on a
+  terminal with few columns, or have long filenames or paths to search.
+
+- **--file-regexp** to specify a regular expression for file names.  vgrep only
+  greps files that match this pattern.
 
 ###Show indexed location
 To visit a specific location pass **'--show INDEX'**.  vgrep will then open the
