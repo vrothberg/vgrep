@@ -1,7 +1,9 @@
 #!/usr/bin/env python2
 
-"""This module is a reimpementation of the ancient cgvg perl scripts.
-Visit https://github.com/vrothberg/vgrep for more information."""
+"""
+This module is a reimpementation of the ancient cgvg perl scripts.
+Visit https://github.com/vrothberg/vgrep for more information.
+"""
 
 # (c) 2015 Valentin Rothberg <valentinrothberg@gmail.com>
 #
@@ -24,7 +26,9 @@ RE_CONT = re.compile(r"^[^:]+:\d+:(.+)$")
 
 
 class SLOC(object):
-    """Represents a SLOC."""
+    """
+    Represents a SLOC.
+    """
     def __init__(self, string):
         object.__init__(self)
         self.file = SLOC.parse_file(string)
@@ -33,31 +37,41 @@ class SLOC(object):
 
     @staticmethod
     def parse_file(string):
-        """Return file name of %string (from 'git grep -n')."""
+        """
+        Return file name of %string (from 'git grep -n').
+        """
         reg = RE_FILE.search(string)
         return reg.groups()[0]
 
     @staticmethod
     def parse_line(string):
-        """Return file name of %string (from 'git grep -n')."""
+        """
+        Return file name of %string (from 'git grep -n').
+        """
         reg = RE_LINE.search(string)
         return reg.groups()[0]
 
     @staticmethod
     def parse_cont(string):
-        """Return file name of %string (from 'git grep -n')."""
+        """
+        Return file name of %string (from 'git grep -n').
+        """
         reg = RE_CONT.search(string)
         return reg.groups()[0]
 
     @staticmethod
     def sort(slocs):
-        """Return the sorted %code_list with the source file as primary and the
-        source line as secondary key."""
+        """
+        Return the sorted %code_list with the source file as primary and the
+        source line as secondary key.
+        """
         return sorted(slocs, key=lambda x: (x.file, int(x.line)))
 
 
 def parse_options():
-    """User interface of this module."""
+    """
+    User interface of this module.
+    """
     usage = "%prog [arguments]"
     parser = OptionParser(usage=usage)
     parser.add_option('-s', '--show', dest='show', action='store',
@@ -85,7 +99,9 @@ def parse_options():
 
 
 def main():
-    """Main routine of this module."""
+    """
+    Main routine of this module.
+    """
     opts, args = parse_options()
 
     if opts.show:
@@ -137,40 +153,52 @@ def main():
 
 
 def yellow(string, light=0):
-    """Color %string."""
+    """
+    Color %string.
+    """
     if light:
         return "\033[93m%s\033[0m" % string
     return "\033[33m%s\033[0m" % string
 
 
 def red(string, light=0):
-    """Color %string."""
+    """
+    Color %string.
+    """
     if light:
         return "\033[91m%s\033[0m" % string
     return "\033[31m%s\033[0m" % string
 
 
 def blue(string, light=0):
-    """Color %string."""
+    """
+    Color %string.
+    """
     if light:
         return "\033[94m%s\033[0m" % string
     return "\033[34m%s\033[0m" % string
 
 
 def dim(string, light=0):
-    """Dim %string when %light == 1."""
+    """
+    Dim %string when %light == 1.
+    """
     if light:
         return string
     return "\033[2m%s\033[0m" % string
 
 
 def underline(string):
-    """Underline %string."""
+    """
+    Underline %string.
+    """
     return "\033[4m%s\033[0m" % string
 
 
 def print_slocs(slocs, noless, noheader):
-    """Print SLOCS on terminal."""
+    """
+    Print SLOCS on terminal.
+    """
     max_indx = len(str(len(slocs)))
     max_file = 0
     max_line = 0
@@ -215,7 +243,9 @@ def print_slocs(slocs, noless, noheader):
 
 
 def execute(cmd):
-    """Execute %cmd and return stdout.  Exit in case of error."""
+    """
+    Execute %cmd and return stdout.  Exit in case of error.
+    """
     pop = Popen(cmd, stdout=PIPE, stderr=STDOUT, shell=True)
     (stdout, _) = pop.communicate()  # wait until finished
     if pop.returncode != 0:
@@ -224,8 +254,10 @@ def execute(cmd):
 
 
 def grep(symbol, nogit, word, filep):
-    """'git grep' for symbol in current Git tree and return the output. If
-    %nogit is set 'grep -rIn' is called instead of 'git grep -n'."""
+    """
+    'git grep' for symbol in current Git tree and return the output. If %nogit
+    is set 'grep -rIn' is called instead of 'git grep -n'.
+    """
     word_string = ""
     file_pattern = ""
     if word is True:
@@ -248,14 +280,18 @@ def grep(symbol, nogit, word, filep):
 
 
 def dump(data):
-    """Dump %data to the local cache."""
+    """
+    Dump %data to the local cache.
+    """
     if not os.path.exists(os.path.dirname(CACHE)):
         os.makedirs(os.path.dirname(CACHE))
     pickle.dump(data, open(CACHE, "wb"))
 
 
 def load():
-    """Load and return data from the local cache."""
+    """
+    Load and return data from the local cache.
+    """
     try:
         return pickle.load(open(CACHE, "rb"))
     except Exception:
