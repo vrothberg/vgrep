@@ -269,13 +269,13 @@ def grep(symbol, nogit, word, filep):
         else:
             # we need to remain compatible with older versions of grep
             file_pattern = '.'
-        hits = execute("grep -rIn %s %s %s" %
+        hits = execute("grep -rIn %s '%s' %s" %
                        (word_string, symbol, file_pattern)).rsplit("\n")
         return [x.lstrip("./") for x in hits]
 
     if filep:
         file_pattern = '-- "*%s*"' % filep
-    return execute("git grep --no-color -In %s %s %s" %
+    return execute("git grep --no-color -In %s '%s' %s" %
                    (word_string, symbol, file_pattern)).rsplit("\n")
 
 
