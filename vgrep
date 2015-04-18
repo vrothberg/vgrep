@@ -218,9 +218,9 @@ def print_slocs(slocs, noless, noheader):
     if noheader is False:
         if len("Index") > max_indx:
             max_indx = len("Index")
-        if len("Source File") > max_file:
+        if len("File") > max_file:
             max_file = len("File")
-        if len("Source Line") > max_indx:
+        if len("Line") > max_indx:
             max_line = len("Line")
 
         fdc.write(underline(yellow('{0:>{1}}'.format("Index", max_indx))) + " ")
