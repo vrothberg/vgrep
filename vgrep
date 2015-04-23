@@ -11,6 +11,7 @@ Visit https://github.com/vrothberg/vgrep for more information.
 
 import os
 import re
+import signal
 import sys
 import pickle
 from optparse import OptionParser
@@ -212,6 +213,7 @@ def print_slocs(slocs, noless, noheader):
     fdc = sys.stdout
     pop = None
     if noless is False:
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
         pop = Popen("less -FRXS", shell=True, stdin=PIPE)
         fdc = pop.stdin
 
