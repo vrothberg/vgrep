@@ -95,6 +95,10 @@ def parse_options():
                       default=False,
                       help="do not print the pretty header at the top of the "
                            "results")
+    parser.add_option('-i', '--ignore-case', dest='ign_case',
+                      action='store_true', default=False,
+                      help="ignore case differences between the patterns and "
+                           "the files")
     (opts, args) = parser.parse_args()
     return (opts, args)
 
@@ -126,7 +130,8 @@ def main():
     if args:
         hits = []
         for arg in args:
-            hits.extend(grep(arg, opts.nogit, opts.word, opts.file))
+            hits.extend(grep(arg, opts.nogit, opts.word, opts.file,
+                             opts.ign_case))
 
         slocs = []
         for hit in [x for x in hits if x]:
@@ -255,30 +260,33 @@ def execute(cmd):
     return stdout
 
 
-def grep(symbol, nogit, word, filep):
+def grep(symbol, nogit, word, filep, ign_case):
     """
-    'git grep' for symbol in current Git tree and return the output. If %nogit
-    is set 'grep -rIn' is called instead of 'git grep -n'.
+    Search symbol in current Git tree and return the output. If %nogit is set
+    grep is called instead of git grep.
     """
-    word_string = ""
+    flags = "-In"
     file_pattern = ""
     if word is True:
-        word_string = "-w"
+        flags += "w"
+    if ign_case is True:
+        flags += "i"
 
     if nogit is True:
+        flags += "r"
         if filep:
             file_pattern = "$(find . -name '*%s*')" % filep
         else:
             # we need to remain compatible with older versions of grep
             file_pattern = '.'
-        hits = execute("grep -rIn %s '%s' %s" %
-                       (word_string, symbol, file_pattern)).rsplit("\n")
+        hits = execute("grep %s '%s' %s" %
+                       (flags, symbol, file_pattern)).rsplit("\n")
         return [x.lstrip("./") for x in hits]
 
     if filep:
         file_pattern = '-- "*%s*"' % filep
-    return execute("git grep --no-color -In %s '%s' %s" %
-                   (word_string, symbol, file_pattern)).rsplit("\n")
+    return execute("git grep --no-color %s '%s' %s" %
+                   (flags, symbol, file_pattern)).rsplit("\n")
 
 
 def dump(data):
