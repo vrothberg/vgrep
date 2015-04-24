@@ -121,9 +121,12 @@ def main():
             sys.exit("Please specify a valid index")
 
         sloc = slocs[index]
-        cmd = "%s +%s %s" % (EDITOR, sloc.line, sloc.file)
-        pop = Popen(cmd, shell=True)
-        pop.wait()
+        pid = os.fork()
+        if not pid:
+            # child process
+            cmd = "%s +%s %s" % (EDITOR, sloc.line, sloc.file)
+            pop = Popen(cmd, shell=True)
+            pop.wait()
         sys.exit(0)
 
     if args:
