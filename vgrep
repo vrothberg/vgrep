@@ -89,8 +89,7 @@ def parse_options():
                       help="use 'grep' instead of 'git grep'")
     parser.add_option('', '--no-less', dest='noless', action='store_true',
                       default=False,
-                      help="do not use 'less' for big ouputs (>100) and just "
-                           "print on the console")
+                      help="print to stdout instead of using less")
     parser.add_option('', '--no-header', dest='noheader', action='store_true',
                       default=False,
                       help="do not print the pretty header at the top of the "
