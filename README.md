@@ -21,10 +21,7 @@ and share.
 An example could look as follows:
 ![](https://github.com/vrothberg/vgrep/blob/master/screenshots/grep_example.png)
 
-####More options:
-
-- **'--word-regexp'** if you want to match the pattern *FOO* only at word
-  boundaries (e.g., to avoid substring matches).
+####vgrep-specific options:
 
 - **'--no-git'** to use to *grep* instead (required outside a Git repository).
 
@@ -32,8 +29,10 @@ An example could look as follows:
   information on each line.  This option is helpful if you are working on a
   terminal with few columns, or have long filenames or paths to search.
 
-- **--file-regexp** to specify a regular expression for file names.  vgrep only
-  greps files that match this pattern.
+####grep-specific options:
+
+- Note that all non-vgrep specific options/arguments will be passed to *git
+  grep* and *grep*; please read the manuals for further information.
 
 ###Show indexed location
 To visit a specific location pass **'--show INDEX'**.  vgrep will then open the

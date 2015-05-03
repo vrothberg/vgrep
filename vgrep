@@ -2,6 +2,7 @@
 
 """
 This module is a reimpementation of the ancient cgvg perl scripts.
+
 Visit https://github.com/vrothberg/vgrep for more information.
 """
 
@@ -9,12 +10,12 @@ Visit https://github.com/vrothberg/vgrep for more information.
 #
 # Licensed under the terms of the GNU GPL License version 3
 
+import argparse
 import os
 import re
 import signal
 import sys
 import pickle
-from optparse import OptionParser
 from subprocess import Popen, PIPE, STDOUT
 
 HOMEDIR = os.getenv("HOME")
@@ -74,48 +75,38 @@ def parse_options():
     User interface of this module.
     """
     usage = "%prog [arguments]"
-    parser = OptionParser(usage=usage)
-    parser.add_option('-s', '--show', dest='show', action='store',
-                      default="",
-                      help="show indexed location in the system's editor")
-    parser.add_option('-w', '--word-regexp', dest='word', action='store_true',
-                      default=False,
-                      help="match the pattern only at a word boundary")
-    parser.add_option('-f', '--file-regexp', dest='file', action='store',
-                      default='',
-                      help="grep only in files that match the pattern")
-    parser.add_option('', '--no-git', dest='nogit', action='store_true',
-                      default=False,
-                      help="use 'grep' instead of 'git grep'")
-    parser.add_option('', '--no-less', dest='noless', action='store_true',
-                      default=False,
-                      help="print to stdout instead of using less")
-    parser.add_option('', '--no-header', dest='noheader', action='store_true',
-                      default=False,
-                      help="do not print the pretty header at the top of the "
-                           "results")
-    parser.add_option('-i', '--ignore-case', dest='ign_case',
-                      action='store_true', default=False,
-                      help="ignore case differences between the patterns and "
-                           "the files")
-    (opts, args) = parser.parse_args()
-    return (opts, args)
+    parser = argparse.ArgumentParser(description=usage)
+    parser.add_argument('-s', '--show', dest='show', action='store',
+                        default="",
+                        help="show indexed location in the system's editor")
+    parser.add_argument('--no-git', dest='nogit', action='store_true',
+                        default=False,
+                        help="use 'grep' instead of 'git grep'")
+    parser.add_argument('--no-less', dest='noless', action='store_true',
+                        default=False,
+                        help="print to stdout instead of using less")
+    parser.add_argument('--no-header', dest='noheader', action='store_true',
+                        default=False,
+                        help="do not print the pretty header at the top of "
+                             "the results")
+    args, gitargs = parser.parse_known_args()
+    return args, gitargs
 
 
 def main():
     """
     Main routine of this module.
     """
-    opts, args = parse_options()
+    args, gitargs = parse_options()
 
-    if opts.show:
+    if args.show:
         slocs = load()
         if not slocs:
             sys.exit("Please grep for a symbol first")
 
         index = None
         try:
-            index = int(opts.show)
+            index = int(args.show)
             sloc = slocs[index]
         except (ValueError, IndexError):
             sys.exit("Please specify a valid index")
@@ -126,11 +117,10 @@ def main():
         pop.wait()
         sys.exit(0)
 
-    if args:
-        hits = []
-        for arg in args:
-            hits.extend(grep(arg, opts.nogit, opts.word, opts.file,
-                             opts.ign_case))
+    if gitargs:
+        gitargs = ["'%s'" % x for x in gitargs]  # needed to pass args to grep
+        grep_args = " ".join(gitargs)
+        hits = grep(grep_args, args.nogit)
         hits = [x for x in hits if x != '']  # filter empty hits
         if not hits:
             # exit if there is not hit
@@ -156,7 +146,7 @@ def main():
             sys.exit(0)
 
     try:
-        print_slocs(slocs, opts.noless, opts.noheader)
+        print_slocs(slocs, args.noless, args.noheader)
     except IOError:
         pass
 
@@ -264,33 +254,19 @@ def execute(cmd):
     return stdout
 
 
-def grep(symbol, nogit, word, filep, ign_case):
+def grep(grep_args, nogit):
     """
     Search symbol in current Git tree and return the output. If %nogit is set
     grep is called instead of git grep.
     """
-    flags = "-In"
-    file_pattern = ""
-    if word is True:
-        flags += "w"
-    if ign_case is True:
-        flags += "i"
+    grep_args = "-In %s" % grep_args
 
     if nogit is True:
-        flags += "r"
-        if filep:
-            file_pattern = "$(find . -name '*%s*')" % filep
-        else:
-            # we need to remain compatible with older versions of grep
-            file_pattern = '.'
-        hits = execute("grep %s '%s' %s" %
-                       (flags, symbol, file_pattern)).rsplit("\n")
+        grep_args += " -r"
+        hits = execute("grep %s ." % grep_args).rsplit("\n")
         return [x.lstrip("./") for x in hits]
 
-    if filep:
-        file_pattern = '-- "*%s*"' % filep
-    return execute("git grep --no-color %s '%s' %s" %
-                   (flags, symbol, file_pattern)).rsplit("\n")
+    return execute("git grep --no-color %s" % grep_args).rsplit("\n")
 
 
 def dump(data):
