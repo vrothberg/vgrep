@@ -131,6 +131,10 @@ def main():
         for arg in args:
             hits.extend(grep(arg, opts.nogit, opts.word, opts.file,
                              opts.ign_case))
+        hits = [x for x in hits if x != '']  # filter empty hits
+        if not hits:
+            # exit if there is not hit
+            sys.exit(0)
 
         slocs = []
         for hit in [x for x in hits if x]:
@@ -255,7 +259,8 @@ def execute(cmd):
     pop = Popen(cmd, stdout=PIPE, stderr=STDOUT, shell=True)
     (stdout, _) = pop.communicate()  # wait until finished
     if pop.returncode != 0:
-        sys.exit(stdout)
+        if stdout != '':
+            sys.exit("Command failed: %s\n%s" % (cmd, stdout))
     return stdout
 
 
