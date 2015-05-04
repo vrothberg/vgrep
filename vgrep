@@ -27,49 +27,6 @@ RE_LINE = re.compile(r"^[^:]+:(\d+):.*")
 RE_CONT = re.compile(r"^[^:]+:\d+:(.*)$")
 
 
-class SLOC(object):
-    """
-    Represents a SLOC.
-    """
-    def __init__(self, string):
-        object.__init__(self)
-        self.file = SLOC.parse_file(string)
-        self.line = SLOC.parse_line(string)
-        self.cont = SLOC.parse_cont(string).lstrip()
-
-    @staticmethod
-    def parse_file(string):
-        """
-        Return file name of %string (from 'git grep -n').
-        """
-        reg = RE_FILE.search(string)
-        return reg.groups()[0]
-
-    @staticmethod
-    def parse_line(string):
-        """
-        Return file name of %string (from 'git grep -n').
-        """
-        reg = RE_LINE.search(string)
-        return reg.groups()[0]
-
-    @staticmethod
-    def parse_cont(string):
-        """
-        Return file name of %string (from 'git grep -n').
-        """
-        reg = RE_CONT.search(string)
-        return reg.groups()[0]
-
-    @staticmethod
-    def sort(slocs):
-        """
-        Return the sorted %code_list with the source file as primary and the
-        source line as secondary key.
-        """
-        return sorted(slocs, key=lambda x: (x.file, int(x.line)))
-
-
 def parse_options():
     """
     User interface of this module.
@@ -112,7 +69,7 @@ def main():
             sys.exit("Please specify a valid index")
 
         sloc = slocs[index]
-        cmd = "%s +%s %s" % (EDITOR, sloc.line, sloc.file)
+        cmd = "%s +%s %s" % (EDITOR, sloc[1], sloc[0])
         pop = Popen(cmd, shell=True)
         pop.wait()
         sys.exit(0)
@@ -126,14 +83,18 @@ def main():
             # exit if there is not hit
             sys.exit(0)
 
+        print "Read input from git"
         slocs = []
+        count = 1
         for hit in [x for x in hits if x]:
+            print "%d of %d" % (count, len(hits))
+            count += 1
             try:
-                slocs.append(SLOC(hit))
+                slocs.append(parse_line(hit))
             except IndexError as err:
                 print >> sys.stderr, "Could not parse '%s'\n%s" % (hit, err)
 
-        slocs = SLOC.sort(slocs)
+#        slocs = sorted(slocs, key=lambda x: (x[0], int(x[1])))
         pid = os.fork()
         if not pid:
             # child process
@@ -149,6 +110,16 @@ def main():
         print_slocs(slocs, args.noless, args.noheader)
     except IOError:
         pass
+
+
+def parse_line(string):
+    """
+    Return file name of %string (from 'git grep -n').
+    """
+    reg_file = RE_FILE.search(string).groups()[0]
+    reg_line = RE_LINE.search(string).groups()[0]
+    reg_cont = RE_CONT.search(string).groups()[0]
+    return (reg_file, reg_line, reg_cont)
 
 
 def yellow(string, light=0):
@@ -203,10 +174,10 @@ def print_slocs(slocs, noless, noheader):
     max_line = 0
 
     for sloc in slocs:
-        if len(sloc.file) > max_file:
-            max_file = len(sloc.file)
-        if len(sloc.line) > max_line:
-            max_line = len(sloc.line)
+        if len(sloc[0]) > max_file:
+            max_file = len(sloc[0])
+        if len(sloc[1]) > max_line:
+            max_line = len(sloc[1])
 
     fdc = sys.stdout
     pop = None
@@ -232,9 +203,9 @@ def print_slocs(slocs, noless, noheader):
         light = i % 2
 
         fdc.write(yellow('{0:>{1}} '.format(i, max_indx), light))
-        fdc.write(blue('{0:<{1}} '.format(slocs[i].file, max_file), light))
-        fdc.write(red('{0:>{1}} '.format(slocs[i].line, max_line), light))
-        fdc.write(dim(slocs[i].cont, light))
+        fdc.write(blue('{0:<{1}} '.format(slocs[i][0], max_file), light))
+        fdc.write(red('{0:>{1}} '.format(slocs[i][1], max_line), light))
+        fdc.write(dim(slocs[i][2], light))
         fdc.write("\n")
 
     fdc.close()
