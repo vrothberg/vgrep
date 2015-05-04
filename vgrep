@@ -22,9 +22,9 @@ HOMEDIR = os.getenv("HOME")
 CACHE = HOMEDIR + "/.cache/vgrep"
 EDITOR = os.getenv("EDITOR", "vim")
 
-RE_FILE = re.compile(r"^([^:]+):\d+:.+")
-RE_LINE = re.compile(r"^[^:]+:(\d+):.+")
-RE_CONT = re.compile(r"^[^:]+:\d+:(.+)$")
+RE_FILE = re.compile(r"^([^:]+):\d+:.*")
+RE_LINE = re.compile(r"^[^:]+:(\d+):.*")
+RE_CONT = re.compile(r"^[^:]+:\d+:(.*)$")
 
 
 class SLOC(object):
