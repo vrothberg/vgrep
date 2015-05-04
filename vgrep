@@ -17,15 +17,11 @@ import signal
 import sys
 import pickle
 from subprocess import Popen, PIPE, STDOUT
+from array import array
 
 HOMEDIR = os.getenv("HOME")
 CACHE = HOMEDIR + "/.cache/vgrep"
 EDITOR = os.getenv("EDITOR", "vim")
-
-RE_FILE = re.compile(r"^([^:]+):\d+:.*")
-RE_LINE = re.compile(r"^[^:]+:(\d+):.*")
-RE_CONT = re.compile(r"^[^:]+:\d+:(.*)$")
-
 
 def parse_options():
     """
@@ -69,7 +65,9 @@ def main():
             sys.exit("Please specify a valid index")
 
         sloc = slocs[index]
-        cmd = "%s +%s %s" % (EDITOR, sloc[1], sloc[0])
+        lfile = sloc.find(':') + 1
+        lline = lfile + sloc[lfile:].find(':')
+        cmd = "%s +%s %s" % (EDITOR, sloc[lfile:lline], sloc[:lfile-1])
         pop = Popen(cmd, shell=True)
         pop.wait()
         sys.exit(0)
@@ -77,22 +75,18 @@ def main():
     if gitargs:
         gitargs = ["'%s'" % x for x in gitargs]  # needed to pass args to grep
         grep_args = " ".join(gitargs)
-        hits = grep(grep_args, args.nogit)
-        hits = [x for x in hits if x != '']  # filter empty hits
-        if not hits:
+
+        slocs = grep(grep_args, args.nogit)
+        slocs = [x for x in slocs if x != '']  # filter empty hits
+        if not slocs:
             # exit if there is not hit
             sys.exit(0)
 
-        slocs = []
-        count = 1
-        for hit in [x for x in hits if x]:
-            count += 1
-            try:
-                slocs.append(parse_line(hit))
-            except:
-                sys.stderr.write("Could not parse '%s'\n" % hit)
-                sys.stderr.write("Format 'file:line:content' is required\n")
-                sys.exit(1)
+        if not re.match(r"^[^:]+:\d+:.*$", slocs[0]):
+            sys.stderr.write("Wrong format from (git) grep: '%s'\n" % slocs[0])
+            sys.stderr.write("vgrep expects the format '%s:%s:%s'\n"
+                             % (blue('file'), red('line'), dim('content')))
+            sys.exit(1)
 
         pid = os.fork()
         if not pid:
@@ -109,16 +103,6 @@ def main():
         print_slocs(slocs, args.noless, args.noheader)
     except:
         pass
-
-
-def parse_line(string):
-    """
-    Return file name of %string (from 'git grep -n').
-    """
-    reg_file = RE_FILE.search(string).groups()[0]
-    reg_line = RE_LINE.search(string).groups()[0]
-    reg_cont = RE_CONT.search(string).groups()[0]
-    return (reg_file, reg_line, reg_cont)
 
 
 def yellow(string, light=0):
@@ -172,11 +156,17 @@ def print_slocs(slocs, noless, noheader):
     max_file = 0
     max_line = 0
 
+    lengths = array('I', [])
+
     for sloc in slocs:
-        if len(sloc[0]) > max_file:
-            max_file = len(sloc[0])
-        if len(sloc[1]) > max_line:
-            max_line = len(sloc[1])
+        lfile = sloc.find(':')
+        lline = sloc[lfile+1:].find(':')
+        lengths.append(lfile)
+        lengths.append(lline)
+        if lfile > max_file:
+            max_file = lfile
+        if lline > max_line:
+            max_line = lfile
 
     fdc = sys.stdout
     pop = None
@@ -198,13 +188,16 @@ def print_slocs(slocs, noless, noheader):
         fdc.write(underline(red('{0:>{1}}'.format("Line", max_line))) + " ")
         fdc.write(underline(dim("Content")) + "\n")
 
-    for i in range(len(slocs)):
+    lfile, lline = 0, 0
+    for i in range(0, len(slocs)):
         light = i % 2
+        lfile = lengths[i*2] + 1
+        lline = lengths[i*2 + 1] + lfile + 1
 
         fdc.write(yellow('{0:>{1}} '.format(i, max_indx), light))
-        fdc.write(blue('{0:<{1}} '.format(slocs[i][0], max_file), light))
-        fdc.write(red('{0:>{1}} '.format(slocs[i][1], max_line), light))
-        fdc.write(dim(slocs[i][2], light))
+        fdc.write(blue('{0:<{1}} '.format(slocs[i][:lfile-1], max_file), light))
+        fdc.write(red('{0:>{1}} '.format(slocs[i][lfile:lline-1], max_line), light))
+        fdc.write(dim(slocs[i][lline:], light))
         fdc.write("\n")
 
     fdc.close()
@@ -255,7 +248,7 @@ def load():
     try:
         return pickle.load(open(CACHE, "rb"))
     except:
-        print >> sys.stderr, "Could not load cached data"
+        sys.stdout.write("Could not load cached data")
         return None
 
 
