@@ -83,18 +83,17 @@ def main():
             # exit if there is not hit
             sys.exit(0)
 
-        print "Read input from git"
         slocs = []
         count = 1
         for hit in [x for x in hits if x]:
-            print "%d of %d" % (count, len(hits))
             count += 1
             try:
                 slocs.append(parse_line(hit))
-            except IndexError as err:
-                print >> sys.stderr, "Could not parse '%s'\n%s" % (hit, err)
+            except:
+                sys.stderr.write("Could not parse '%s'\n" % hit)
+                sys.stderr.write("Format 'file:line:content' is required\n")
+                sys.exit(1)
 
-#        slocs = sorted(slocs, key=lambda x: (x[0], int(x[1])))
         pid = os.fork()
         if not pid:
             # child process
@@ -108,7 +107,7 @@ def main():
 
     try:
         print_slocs(slocs, args.noless, args.noheader)
-    except IOError:
+    except:
         pass
 
 
@@ -255,7 +254,7 @@ def load():
     """
     try:
         return pickle.load(open(CACHE, "rb"))
-    except Exception:
+    except:
         print >> sys.stderr, "Could not load cached data"
         return None
 
