@@ -23,6 +23,7 @@ HOMEDIR = os.getenv("HOME")
 CACHE = HOMEDIR + "/.cache/vgrep"
 EDITOR = os.getenv("EDITOR", "vim")
 
+
 def parse_options():
     """
     User interface of this module.
@@ -166,7 +167,7 @@ def print_slocs(slocs, noless, noheader):
         if lfile > max_file:
             max_file = lfile
         if lline > max_line:
-            max_line = lfile
+            max_line = lline
 
     fdc = sys.stdout
     pop = None
@@ -180,7 +181,7 @@ def print_slocs(slocs, noless, noheader):
             max_indx = len("Index")
         if len("File") > max_file:
             max_file = len("File")
-        if len("Line") > max_indx:
+        if len("Line") > max_line:
             max_line = len("Line")
 
         fdc.write(underline(yellow('{0:>{1}}'.format("Index", max_indx))) + " ")
