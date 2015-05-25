@@ -55,7 +55,11 @@ def main():
 
     if args.show:
         slocs = load()
-        if not slocs:
+        cwd = slocs.pop(0)
+        if cwd != os.getcwd():
+            sys.exit("Change directory to %s to show locations" % cwd)
+
+        if slocs is None:
             sys.exit("Please grep for a symbol first")
 
         index = None
@@ -80,7 +84,8 @@ def main():
         slocs = grep(grep_args, args.nogit)
         slocs = [x for x in slocs if x != '']  # filter empty hits
         if not slocs:
-            # exit if there is not hit
+            # dump and exit if there is not hit
+            dump(slocs)
             sys.exit(0)
 
         if not re.match(r"^[^:]+:\d+:.*$", slocs[0]):
@@ -89,16 +94,15 @@ def main():
                              % (blue('file'), red('line'), dim('content')))
             sys.exit(1)
 
-        pid = os.fork()
-        if not pid:
-            # child process
-            dump(slocs)
-            sys.exit(0)
+        dump(slocs)
 
     else:
         slocs = load()
         if not slocs:
             sys.exit(0)
+        cwd = slocs.pop(0)
+        if cwd != os.getcwd():
+            sys.exit("Change directory to %s to show locations" % cwd)
 
     try:
         print_slocs(slocs, args.noless, args.noheader)
@@ -235,11 +239,18 @@ def grep(grep_args, nogit):
 
 def dump(data):
     """
-    Dump %data to the local cache.
+    Fork and dump %data to the local cache.
     """
+    if os.fork():
+        return
+
+    # child process
+    cwd = os.getcwd()
+    data.insert(0, cwd)
     if not os.path.exists(os.path.dirname(CACHE)):
         os.makedirs(os.path.dirname(CACHE))
     pickle.dump(data, open(CACHE, "wb"))
+    sys.exit(0)
 
 
 def load():
