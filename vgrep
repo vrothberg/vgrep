@@ -91,7 +91,7 @@ def main():
         if not re.match(r"^[^:]+:\d+:.*$", slocs[0]):
             sys.stderr.write("Wrong format from (git) grep: '%s'\n" % slocs[0])
             sys.stderr.write("vgrep expects the format '%s:%s:%s'\n"
-                             % (blue('file'), red('line'), dim('content')))
+                             % (blu('file'), red('line'), dim('content')))
             sys.exit(1)
 
         dump(slocs)
@@ -99,7 +99,7 @@ def main():
     else:
         slocs = load()
         if not slocs:
-            sys.exit(0)
+            sys.exit("Could not load cached data")
         cwd = slocs.pop(0)
         if cwd != os.getcwd():
             sys.exit("Change directory to %s to show locations" % cwd)
@@ -110,7 +110,7 @@ def main():
         pass
 
 
-def yellow(string, light=0):
+def yel(string, light=0):
     """
     Color %string.
     """
@@ -128,7 +128,7 @@ def red(string, light=0):
     return "\033[31m%s\033[0m" % string
 
 
-def blue(string, light=0):
+def blu(string, light=0):
     """
     Color %string.
     """
@@ -137,16 +137,14 @@ def blue(string, light=0):
     return "\033[34m%s\033[0m" % string
 
 
-def dim(string, light=0):
+def dim(string):
     """
-    Dim %string when %light == 1.
+    Dim %string.
     """
-    if light:
-        return string
     return "\033[2m%s\033[0m" % string
 
 
-def underline(string):
+def und(string):
     """
     Underline %string.
     """
@@ -188,10 +186,10 @@ def print_slocs(slocs, noless, noheader):
         if len("Line") > max_line:
             max_line = len("Line")
 
-        fdc.write(underline(yellow('{0:>{1}}'.format("Index", max_indx))) + " ")
-        fdc.write(underline(blue('{0:<{1}}'.format("File", max_file))) + " ")
-        fdc.write(underline(red('{0:>{1}}'.format("Line", max_line))) + " ")
-        fdc.write(underline(dim("Content")) + "\n")
+        fdc.write(und(yel('{0:>{1}}'.format("Index", max_indx))) + " ")
+        fdc.write(und(blu('{0:<{1}}'.format("File", max_file))) + " ")
+        fdc.write(und(red('{0:>{1}}'.format("Line", max_line))) + " ")
+        fdc.write(und(dim("Content")) + "\n")
 
     lfile, lline = 0, 0
     for i in range(0, len(slocs)):
@@ -199,11 +197,10 @@ def print_slocs(slocs, noless, noheader):
         lfile = lengths[i*2] + 1
         lline = lengths[i*2 + 1] + lfile + 1
 
-        fdc.write(yellow('{0:>{1}} '.format(i, max_indx), light))
-        fdc.write(blue('{0:<{1}} '.format(slocs[i][:lfile-1], max_file), light))
+        fdc.write(yel('{0:>{1}} '.format(i, max_indx), light))
+        fdc.write(blu('{0:<{1}} '.format(slocs[i][:lfile-1], max_file), light))
         fdc.write(red('{0:>{1}} '.format(slocs[i][lfile:lline-1], max_line), light))
-        fdc.write(dim(slocs[i][lline:], light))
-        fdc.write("\n")
+        fdc.write(dim(slocs[i][lline:].lstrip()) + "\n")
 
     fdc.close()
     if noless is False:
@@ -260,7 +257,6 @@ def load():
     try:
         return pickle.load(open(CACHE, "rb"))
     except:
-        sys.stdout.write("Could not load cached data")
         return None
 
 
