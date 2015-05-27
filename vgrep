@@ -82,7 +82,7 @@ def main():
         grep_args = " ".join(gitargs)
 
         slocs = grep(grep_args, args.nogit)
-        slocs = [x for x in slocs if x != '']  # filter empty hits
+        slocs = filter(None, slocs)  # filter empty hits
         if not slocs:
             # dump and exit if there is not hit
             dump(slocs)
