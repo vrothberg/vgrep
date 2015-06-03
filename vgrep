@@ -28,8 +28,7 @@ def parse_options():
     """
     User interface of this module.
     """
-    usage = "%prog [arguments]"
-    parser = argparse.ArgumentParser(description=usage)
+    parser = argparse.ArgumentParser()
     parser.add_argument('-s', '--show', dest='show', action='store',
                         default="",
                         help="show indexed location in the system's editor")
