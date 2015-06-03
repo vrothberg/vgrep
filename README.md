@@ -18,7 +18,7 @@ and share.
 
 - Run vgrep without arguments to see the results of the last query.
 
-An example could look as follows:
+An example call could look as follows:
 ![](https://github.com/vrothberg/vgrep/blob/master/screenshots/grep_example.png)
 
 ####vgrep-specific options:
@@ -32,7 +32,14 @@ An example could look as follows:
 ####grep-specific options:
 
 - Note that all non-vgrep specific options/arguments will be passed to *git
-  grep* and *grep*; please read the manuals for further information.
+  grep* or *grep*.  To give a few examples:
+
+ - **vgrep -w FOO** will match *FOO* only at word boundaries.  Since vgrep has
+   no option *-w* it will be passed to (git) grep respectively.
+
+ - **vgrep FOO -- "*.c"** to grep only in .c files.
+
+- Please refer to their manuals for further information.
 
 ###Show indexed location
 To visit a specific location pass **'--show INDEX'**.  vgrep will then open the
