@@ -238,7 +238,7 @@ def grep(grep_args, nogit):
         grep_args += " -r"
         return execute("%s grep %s ." % (colors, grep_args)).rsplit("\n")
 
-    colors = "-c 'color.grep.match=red'"
+    colors = "-c 'color.grep.match=red bold'"
     return execute("HOME= git %s  grep %s" % (colors, grep_args)).rsplit("\n")
 
 
