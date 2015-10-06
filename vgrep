@@ -56,7 +56,7 @@ def main():
 
     if args.show:
         slocs = load()
-        cwd = slocs.pop(0)
+        cwd = rem_ansi(slocs.pop(0))
         if cwd != os.getcwd():
             sys.exit("Change directory to %s to show locations" % cwd)
 
@@ -66,11 +66,10 @@ def main():
         index = None
         try:
             index = int(args.show)
-            sloc = slocs[index]
+            sloc = rem_ansi(slocs[index])
         except (ValueError, IndexError):
             sys.exit("Please specify a valid index")
 
-        sloc = slocs[index]
         lfile = sloc.find(':') + 1
         lline = lfile + sloc[lfile:].find(':')
         cmd = "%s +%s %s" % (EDITOR, sloc[lfile:lline], sloc[:lfile-1])
