@@ -18,6 +18,7 @@ import sys
 import pickle
 from subprocess import Popen, PIPE, STDOUT
 from array import array
+from pipes import quote
 
 HOMEDIR = os.getenv("HOME")
 CACHE = HOMEDIR + "/.cache/vgrep"
@@ -37,6 +38,9 @@ def parse_options():
     parser.add_argument('--no-git', dest='nogit', action='store_true',
                         default=False,
                         help="use 'grep' instead of 'git grep'")
+    parser.add_argument('--no-git-submodules', dest='nogitsubmodules', action='store_true',
+                        default=False,
+                        help="do not search in git submodules")
     parser.add_argument('--no-less', dest='noless', action='store_true',
                         default=False,
                         help="print to stdout instead of using less")
@@ -81,7 +85,7 @@ def main():
         gitargs = ["'%s'" % x for x in gitargs]  # needed to pass args to grep
         grep_args = " ".join(gitargs)
 
-        slocs = grep(grep_args, args.nogit)
+        slocs = grep(grep_args, args.nogit, args.nogitsubmodules)
         slocs = filter(None, slocs)  # filter empty hits
         if not slocs:
             # dump and exit if there is not hit
@@ -224,7 +228,7 @@ def execute(cmd):
     return stdout
 
 
-def grep(grep_args, nogit):
+def grep(grep_args, nogit, nogitsubmodules):
     """
     Search symbol in current Git tree and return the output. If %nogit is set
     grep is called instead of git grep.
@@ -238,8 +242,20 @@ def grep(grep_args, nogit):
         return execute("%s grep %s ." % (colors, grep_args)).rsplit("\n")
 
     colors = "-c 'color.grep.match=red bold'"
-    return execute("HOME= git %s  grep %s" % (colors, grep_args)).rsplit("\n")
+    git_grep_cmd = "HOME= git {colors} grep {args}".format(colors=colors, args=grep_args)
+    git_grep_results = execute(git_grep_cmd).rsplit("\n")
 
+    # grep in submodules
+    if nogitsubmodules:
+        git_grep_submodule_results = []
+    else:
+        sed_cmd = 'sed "s#^#$path/#"'
+        git_grep_submodule_cmd = "git submodule --quiet foreach --recursive {cmd}".format(
+            cmd=quote(git_grep_cmd + " | " + sed_cmd)
+        )
+        git_grep_submodule_results = execute(git_grep_submodule_cmd).rsplit("\n")
+
+    return git_grep_results + git_grep_submodule_results
 
 def dump(data):
     """
