@@ -242,31 +242,32 @@ def grep(grep_args, nogit, nogitsubmodules):
         return execute("%s grep %s ." % (colors, grep_args)).rsplit("\n")
 
     colors = "-c 'color.grep.match=red bold'"
-    git_grep_cmd = "HOME= git {colors} grep {args}".format(colors=colors, args=grep_args)
+    git_grep_cmd = "HOME= git %s grep %s" %(colors, grep_args)
     git_grep_results = execute(git_grep_cmd).rsplit("\n")
 
-    # grep in submodules
-    if nogitsubmodules is False:
-        cwd = os.path.abspath(os.path.curdir)
-        # Get all submodules (recursive)
-        git_submodule_cmd = "git submodule --quiet foreach --recursive {cmd}".format(
-            cmd=quote('echo "$toplevel/$path"'),
-        )
-        submodules = execute(git_submodule_cmd).rsplit("\n")
-        for submodule in filter(None, submodules):
-            # check if submodule is below the current working directory
-            submodule = os.path.normpath(submodule)
-            if os.path.commonprefix([submodule, cwd]) != cwd:
-                continue
-            # Get the path relative to the CWD
-            submodule = os.path.relpath(submodule, cwd)
+    # When submodules are ignored, we can return here.
+    if nogitsubmodules is True:
+        return git_grep_results
 
-            # Start grep within the submodule
-            git_submodule_grep_cmd = "cd {pwd} && {grep}".format(pwd=quote(submodule), grep=git_grep_cmd)
-            lines = execute(git_submodule_grep_cmd).rsplit("\n")
-            # Prepend the relative submodule path to each line
-            for line in filter(None, lines):
-                git_grep_results.append(os.path.join(submodule, line))
+    cwd = os.path.abspath(os.path.curdir)
+    # Get all submodules (recursive)
+    list_cmd = "git submodule --quiet foreach --recursive %s" %\
+                        quote('echo "$toplevel/$path"')
+    submodules = execute(list_cmd).rsplit("\n")
+    for submodule in filter(None, submodules):
+        # check if submodule is below the current working directory
+        submodule = os.path.normpath(submodule)
+        if os.path.commonprefix([submodule, cwd]) != cwd:
+            continue
+        # Get the path relative to the CWD
+        submodule = os.path.relpath(submodule, cwd)
+
+        # Start grep within the submodule
+        sub_grep_cmd = "cd %s && %s" % (quote(submodule), git_grep_cmd)
+        lines = execute(sub_grep_cmd).rsplit("\n")
+        # Prepend the relative submodule path to each line
+        for line in filter(None, lines):
+            git_grep_results.append(os.path.join(submodule, line))
 
     return git_grep_results
 
