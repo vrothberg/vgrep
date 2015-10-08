@@ -38,8 +38,8 @@ def parse_options():
     parser.add_argument('--no-git', dest='nogit', action='store_true',
                         default=False,
                         help="use 'grep' instead of 'git grep'")
-    parser.add_argument('--no-git-submodules', dest='nogitsubmodules', action='store_true',
-                        default=False,
+    parser.add_argument('--no-git-submodules', dest='nogitsubmodules',
+                        action='store_true', default=False,
                         help="do not search in git submodules")
     parser.add_argument('--no-less', dest='noless', action='store_true',
                         default=False,
