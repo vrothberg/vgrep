@@ -12,13 +12,14 @@ Visit https://github.com/vrothberg/vgrep for more information.
 
 import argparse
 import os
-import re
-import signal
 import sys
 import pickle
-from subprocess import Popen, PIPE, STDOUT
+import re
+import signal
+
 from array import array
 from pipes import quote
+from subprocess import Popen, PIPE, STDOUT
 
 HOMEDIR = os.getenv("HOME")
 CACHE = HOMEDIR + "/.cache/vgrep"
