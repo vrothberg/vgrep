@@ -51,11 +51,14 @@ def parse_options():
     args, gitargs = parser.parse_known_args()
     return args, gitargs
 
-def parse_line(sloc):
-    """Returns indices of first and second delimiter of the input
-       line. Delimiters are `\0', `:', `-'.
 
-       One or both indices can be -1"""
+def parse_line(sloc):
+    """
+    Returns indices of first and second delimiter of the input line.
+    Delimiters are `\0', `:', `-'.
+
+    One or both indices can be -1.
+    """
 
     lfile = sloc.find('\0')
     if lfile == -1:
@@ -187,9 +190,11 @@ def print_slocs(slocs, noless, noheader):
 
     lengths = array('i', [])
 
+    pl = parse_line  # makes it faster by avoiding function lookups
     for sloc in slocs:
         sloc = rem_ansi(sloc)
-        lfile, lline = parse_line(sloc)
+        lfile, lline = pl(sloc)
+
         lengths.append(lfile)
         lengths.append(lline)
         if lfile > max_file:
