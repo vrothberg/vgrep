@@ -51,6 +51,23 @@ def parse_options():
     args, gitargs = parser.parse_known_args()
     return args, gitargs
 
+def parse_line(sloc):
+    """Returns indices of first and second delimiter of the input
+       line. Delimiters are `\0', `:', `-'.
+
+       One or both indices can be -1"""
+
+    lfile = sloc.find('\0')
+    if lfile == -1:
+        lfile = sloc.find(':')
+    lline = sloc.find('\0', lfile+1)
+    if lline == -1 or not sloc[lfile+1:lline].isdigit():
+        lline = sloc.find(':', lfile+1)
+    if lline == -1 or not sloc[lfile+1:lline].isdigit():
+        lline = sloc.find('-', lfile+1)
+
+    return lfile, lline
+
 
 def main():
     """
@@ -74,9 +91,10 @@ def main():
         except (ValueError, IndexError):
             sys.exit("Please specify a valid index")
 
-        lfile = sloc.find(':') + 1
-        lline = lfile + sloc[lfile:].find(':')
-        cmd = "%s +%s %s" % (EDITOR, sloc[lfile:lline], sloc[:lfile-1])
+        lfile, lline = parse_line(sloc)
+        if lfile == -1 or lline == -1:
+            sys.exit("Please specify a valid index")
+        cmd = "%s +%s %s" % (EDITOR, sloc[lfile+1:lline], sloc[:lfile])
         pop = Popen(cmd, shell=True)
         pop.wait()
         sys.exit(0)
@@ -94,10 +112,12 @@ def main():
 
         # test ouput format of grep
         test = rem_ansi(slocs[0])
-        if not re.match(r"^[^:]+:\d+:.*$", test):
+        if not re.match(r"^[^:\0]+[:\0]\d+[\0:-].*$", test):
             sys.stderr.write("Wrong format from (git) grep: '%s'\n" % test)
-            sys.stderr.write("vgrep expects the format '%s:%s:%s'\n"
-                             % (blu('file'), green('line'), 'content'))
+            sys.stderr.write("vgrep expects the format '%s:%s:%s' or '%s\\0%s\\0%s'\n"\
+                             % (blu('file'), green('line'), 'content',
+                                blu('file'), green('line'), 'content'))
+
             sys.exit(1)
 
         dump(slocs)
@@ -165,18 +185,17 @@ def print_slocs(slocs, noless, noheader):
     max_file = 0
     max_line = 0
 
-    lengths = array('I', [])
+    lengths = array('i', [])
 
     for sloc in slocs:
         sloc = rem_ansi(sloc)
-        lfile = sloc.find(':')
-        lline = sloc[lfile+1:].find(':')
+        lfile, lline = parse_line(sloc)
         lengths.append(lfile)
         lengths.append(lline)
         if lfile > max_file:
             max_file = lfile
-        if lline > max_line:
-            max_line = lline
+        if (lline-lfile) > max_line:
+            max_line = (lline-lfile)
 
     fdc = sys.stdout
     pop = None
@@ -204,12 +223,16 @@ def print_slocs(slocs, noless, noheader):
 
         light = i % 2
         lfile = lengths[i*2] + 1
-        lline = lengths[i*2 + 1] + lfile + 1
+        lline = lengths[i*2 + 1] + 1
+
+        if lfile == 0 or lline == 0:
+            fdc.write(yel("-" * (max_indx+max_file+max_line+2)) + " " + sloc + "\n")
+            continue
 
         fdc.write(yel('{0:>{1}} '.format(i, max_indx), light))
         fdc.write(blu('{0:<{1}} '.format(sloc[:lfile-1].lstrip('./'), max_file), light))
         fdc.write(green('{0:>{1}} '.format(sloc[lfile:lline-1], max_line), light))
-        fdc.write(slocs[i].split(':', 2)[2][3:].lstrip() + "\n")
+        fdc.write(slocs[i][lline:].lstrip() + "\n")
 
     fdc.close()
     if noless is False:
@@ -239,10 +262,10 @@ def grep(grep_args, nogit, nogitsubmodules):
         # overwrite grep colors to only highlight matches
         colors = "GREP_COLORS='ms=01;31:mc=:sl=:cx=:fn=:ln=:bn=:se='"
         grep_args += " -r"
-        return execute("%s grep %s ." % (colors, grep_args)).rsplit("\n")
+        return execute("%s grep -Z %s ." % (colors, grep_args)).rsplit("\n")
 
     colors = "-c 'color.grep.match=red bold'"
-    git_grep_cmd = "HOME= git %s grep %s" %(colors, grep_args)
+    git_grep_cmd = "HOME= git %s grep -z %s" %(colors, grep_args)
     git_grep_results = execute(git_grep_cmd).rsplit("\n")
 
     # When submodules are ignored, we can return here.
