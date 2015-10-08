@@ -25,6 +25,9 @@ An example call could look as follows:
 
 - **'--no-git'** to use to *grep* instead (required outside a Git repository).
 
+- **'--no-git-submodules'** to not recurse into Git submodules. Git submodule
+  search is only useful within a Git Repository (see --no-git).
+
 - **'--no-header'** to compress the whitespace a bit to help fit more
   information on each line.  This option is helpful if you are working on a
   terminal with few columns, or have long filenames or paths to search.
