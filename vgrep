@@ -223,17 +223,18 @@ def print_slocs(slocs, noless, noheader):
         fdc.write(und(green('{0:>{1}}'.format("Line", max_line))) + " ")
         fdc.write(und("Content") + "\n")
 
-    lfile, lline = 0, 0
+    lfile, lline, lcount = 0, 0, 0
     for i in range(0, len(slocs)):
         sloc = rem_ansi(slocs[i])
-
-        light = i % 2
         lfile = lengths[i*2] + 1
         lline = lengths[i*2 + 1] + 1
 
         if lfile == 0 or lline == 0:
             fdc.write(yel("-" * (max_indx+max_file+max_line+2)) + " " + sloc + "\n")
             continue
+
+        light = lcount % 2
+        lcount += 1
 
         fdc.write(yel('{0:>{1}} '.format(i, max_indx), light))
         fdc.write(blu('{0:<{1}} '.format(sloc[:lfile-1].lstrip('./'), max_file), light))
