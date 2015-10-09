@@ -237,7 +237,10 @@ def print_slocs(slocs, noless, noheader):
         lcount += 1
 
         fdc.write(yel('{0:>{1}} '.format(i, max_indx), light))
-        fdc.write(blu('{0:<{1}} '.format(sloc[:lfile-1].lstrip('./'), max_file), light))
+        fn = sloc[:lfile-1]
+        if fn.startswith("./"):
+            fn = fn[2:]
+        fdc.write(blu('{0:<{1}} '.format(fn, max_file), light))
         fdc.write(green('{0:>{1}} '.format(sloc[lfile:lline-1], max_line), light))
         fdc.write(slocs[i][lline:].lstrip() + "\n")
 
