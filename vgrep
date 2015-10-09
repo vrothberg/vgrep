@@ -171,6 +171,7 @@ def dispatch_show_cmd(show_expr, slocs, options):
         's': show_cmd_open,
         'p': show_cmd_print,
         'P': show_cmd_print_and_save,
+        'c': show_cmd_context,
     }
     if not cmd in options.show_cmds:
         return error("Command not implemented: %s" % cmd)
@@ -324,6 +325,25 @@ def show_cmd_print_and_save(slocs, indices, cmd_arg, options):
     except IOError as e:
         return error("print and save command failed: " + e)
 
+
+def show_cmd_context(slocs, indices, cmd_arg, options):
+    """For every match, this command does give the context of the match
+    within the matched file.
+
+    The cmd_arg gives the number of context lines. Default is 10 lines
+    of context.
+
+    example:
+       3-5c2 -- for matches 3 till 5, print 2 lines of context
+    """
+    try:
+        context_lines = int(cmd_arg)
+    except:
+        context_lines = 10
+    try:
+        print_contexts(slocs, indices, context_lines, options)
+    except IOError:
+        return error("context command failed: " + e)
 
 ################################################################
 # Backend Input/Output Functions
@@ -495,6 +515,41 @@ def load():
     except:
         return None
 
+def print_contexts(slocs, indices, context_lines, args):
+    fdc = sys.stdout
+    pop = None
+    if args.noless is False:
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+        pop = Popen("less -FRXS", shell=True, stdin=PIPE)
+        fdc = pop.stdin
+
+    for i in indices:
+        sloc = rem_ansi(slocs[i])
+        lfile, lline = parse_line(sloc)
+        if lfile == -1 or lline == -1:
+            continue
+        with open(sloc[:lfile]) as fd:
+            line = int(sloc[lfile+1:lline])
+            lines = fd.readlines()
+            start = max(1, line - context_lines)
+            end = min(line + context_lines, len(lines)-1)
+            width = len(str(end))
+            delim = "%s %s %s %s" % (yel("-----"),
+                                     yel(i, True),
+                                     blu(sloc[:lfile], True),
+                                     green("(%s-%s)" %(start, end))
+            )
+            fdc.write("%s %s\n" %(delim, yel("-" * (79-len(rem_ansi(delim))))))
+            for l in range(start, end + 1):
+                fdc.write(green('{0:>{1}}'.format(l, width),l==line) + " ")
+                if l == line:
+                    fdc.write(slocs[i][lline+1:])
+                    fdc.write("\n")
+                else:
+                    fdc.write(lines[l-1])
+    if pop:
+        fdc.close()
+        pop.wait()
 
 if __name__ == "__main__":
     main()
