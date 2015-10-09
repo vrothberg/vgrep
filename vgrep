@@ -173,6 +173,8 @@ def dispatch_show_cmd(show_expr, slocs, options):
         'P': show_cmd_print_and_save,
         'c': show_cmd_context,
         'f': show_cmd_files,
+        'q': show_cmd_quit,
+        'h': show_cmd_help,
     }
     if not cmd in options.show_cmds:
         return error("Command not implemented: %s" % cmd)
@@ -280,6 +282,42 @@ def parse_show(show, slocs):
 ################################################################
 # Show Commands
 ################################################################
+
+def show_cmd_quit(slocs, indices, cmd_arg, option):
+    """quits the interactive mode"""
+    sys.exit(0)
+
+
+def show_cmd_help(slocs, indices, cmd_arg, options):
+    """Gives help and advice. This command is like a good friend.
+
+       cmd_arg: command name or command identifier
+
+       commands:
+         {commands}
+
+       examples:
+          h p       -- help for the print command
+          h execute -- the execute command
+    """
+    # Replace {commands} by the command list
+    if "{commands}" in show_cmd_help.__doc__:
+        commands = []
+        for k, v in options.show_cmds.items():
+            commands.append("%s -- %s" %(k, v.__name__))
+        doc = show_cmd_help\
+              .__doc__ .format(commands="\n         ".join(commands))
+        show_cmd_help.__doc__ = doc
+
+    cmd = cmd_arg.strip()
+    if cmd in options.show_cmds:
+        help(options.show_cmds[cmd])
+    elif "show_cmd_" + cmd_arg in globals():
+        help(globals()["show_cmd_" + cmd_arg])
+    elif not cmd:
+        help(show_cmd_help)
+    else:
+        return warning("no help found for: " + cmd)
 
 def show_cmd_open(slocs, indices, cmd_arg, option):
     """Opens $EDITOR for every match.
