@@ -172,6 +172,7 @@ def dispatch_show_cmd(show_expr, slocs, options):
         'p': show_cmd_print,
         'P': show_cmd_print_and_save,
         'c': show_cmd_context,
+        'f': show_cmd_files,
     }
     if not cmd in options.show_cmds:
         return error("Command not implemented: %s" % cmd)
@@ -344,6 +345,19 @@ def show_cmd_context(slocs, indices, cmd_arg, options):
         print_contexts(slocs, indices, context_lines, options)
     except IOError:
         return error("context command failed: " + e)
+
+def show_cmd_files(slocs, indices, cmd_arg, options):
+    """Prints the list of matched files"""
+    files = []
+    for idx in indices:
+        sloc = rem_ansi(slocs[idx])
+        lfile, lline = parse_line(sloc)
+        if not sloc[:lfile] in files:
+            files.append(sloc[:lfile])
+    for f in files:
+        # FIXME
+        print f
+
 
 ################################################################
 # Backend Input/Output Functions
