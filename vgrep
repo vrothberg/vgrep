@@ -172,6 +172,7 @@ def dispatch_show_cmd(show_expr, slocs, options):
         'p': show_cmd_print,
         'P': show_cmd_print_and_save,
         'c': show_cmd_context,
+        'x': show_cmd_execute,
         'f': show_cmd_files,
         'q': show_cmd_quit,
         'h': show_cmd_help,
@@ -395,6 +396,58 @@ def show_cmd_files(slocs, indices, cmd_arg, options):
     for f in files:
         # FIXME
         print f
+
+
+def show_cmd_execute(slocs, indices, cmd_arg, options):
+    """Execute a command with format strings supplied form match
+       information. When multiple matches are selected, a repeating
+       group has to be supplied given. When no format characters are
+       given, the filename(s) are simply appended to the command.
+
+       Format Strings:
+          %f -- filename of the match
+          %n -- line number of match
+          %m -- matched file content
+
+       Examples:
+          1x vim          -- open file of match 1
+          2-7x ls -l      -- list matched files
+          3x echo %f:%n   -- outout filename and match line for match 3
+          2-7x echo {%n } -- print matched line numbers
+
+    """
+    format_strings = {
+        '%f': '{filename}',
+        '%n': '{line}',
+        '%m': '{match}'
+    }
+    if not any((x in cmd_arg) for x in format_strings):
+        if len(indices)==1:
+            cmd_arg += " %f"
+        else:
+            cmd_arg += '{ "%f"}'
+    start = cmd_arg.find("{")
+    if start != -1:
+        end = cmd_arg.find("}", start)
+    if start == -1 or end == -1:
+        start, end = 0, len(cmd_arg)+1
+        cmd_arg = "{" +cmd_arg+ "}"
+        if len(indices) != 1:
+            return error("When having multiple matches selected, use {..%f..%n} to repeat")
+    cmd = []
+    cmd_fmt = cmd_arg[start+1:end]
+    for f, t in format_strings.items():
+        cmd_fmt = cmd_fmt.replace(f, t)
+    for idx in indices:
+        sloc = rem_ansi(slocs[idx])
+        lfile, lline = parse_line(sloc)
+        if lfile != -1 and lline != -1:
+            cmd.append(cmd_fmt.format(filename = sloc[:lfile],
+                                      line = sloc[lfile+1:lline],
+                                      match = sloc[lline+1:]))
+    cmd = cmd_arg[:start] + "".join(cmd) + cmd_arg[end+1:]
+    pop = Popen(cmd, shell=True)
+    pop.wait()
 
 
 ################################################################
