@@ -301,12 +301,19 @@ def grep(grep_args, nogit, nogitsubmodules):
 
     return git_grep_results
 
-
+old_child = None
 def dump(data):
     """
     Fork and dump %data to the local cache.
     """
-    if os.fork():
+    global old_child
+    if old_child:
+        os.kill(old_child, 15)
+        os.waitpid(old_child, 0)
+
+    child = os.fork()
+    if child:
+        old_child = child
         return
 
     # child process
@@ -314,6 +321,9 @@ def dump(data):
     data.insert(0, cwd)
     if not os.path.exists(os.path.dirname(CACHE)):
         os.makedirs(os.path.dirname(CACHE))
+    # Remove old cache
+    if os.path.exists(CACHE):
+        os.unlink(CACHE)
     pickle.dump(data, open(CACHE, "wb"))
     sys.exit(0)
 
