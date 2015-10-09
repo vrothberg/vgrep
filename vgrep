@@ -169,6 +169,8 @@ def dispatch_show_cmd(show_expr, slocs, options):
 
     options.show_cmds = {
         's': show_cmd_open,
+        'p': show_cmd_print,
+        'P': show_cmd_print_and_save,
     }
     if not cmd in options.show_cmds:
         return error("Command not implemented: %s" % cmd)
@@ -296,6 +298,31 @@ def show_cmd_open(slocs, indices, cmd_arg, option):
         cmd = "%s +%s %s" % (EDITOR, sloc[lfile+1:lline], sloc[:lfile])
         pop = Popen(cmd, shell=True)
         pop.wait()
+
+
+def show_cmd_print(slocs, indices, cmd_arg, options):
+    """Prints all matched lines"""
+    try:
+        print_slocs(slocs, options.noless, options.noheader, set(indices))
+    except IOError as e:
+        return error("print command failed: " + e)
+
+
+def show_cmd_print_and_save(slocs, indices, cmd_arg, options):
+    """Replaces the match cache by the given selection. The selected
+       matches are renumbered and the new match cache is printed.""" 
+    match_slocs = []
+    for idx in indices:
+        match_slocs.append(slocs[idx])
+    # Save matched results
+    dump(match_slocs)
+    # Update the slocs variable
+    slocs[:] = match_slocs
+    # Output the matched lines (reordered)
+    try:
+        print_slocs(match_slocs, options.noless, options.noheader)
+    except IOError as e:
+        return error("print and save command failed: " + e)
 
 
 ################################################################
