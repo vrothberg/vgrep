@@ -176,6 +176,7 @@ def dispatch_show_cmd(show_expr, slocs, options):
         'f': show_cmd_files,
         'q': show_cmd_quit,
         'h': show_cmd_help,
+        'g': show_cmd_grep,
     }
     if not cmd in options.show_cmds:
         return error("Command not implemented: %s" % cmd)
@@ -240,7 +241,7 @@ def rem_ansi(string):
 ################################################################
 
 def parse_show(show, slocs):
-    m = re.match("^([0-9, :-]*|/[^/]*/)([hqspPfcx].*)?$", show)
+    m = re.match("^([0-9, :-]*|/[^/]*/)([ghqspPfcx].*)?$", show)
     assert m, "invalid show expression: " + show
     if m.groups()[1] is None:
         cmd = 's'
@@ -450,6 +451,32 @@ def show_cmd_execute(slocs, indices, cmd_arg, options):
     pop.wait()
 
 
+def show_cmd_grep(slocs, indices, cmd_arg, options):
+    """Executes grep for a pattern on the matched files."""
+    files = []
+    for idx in indices:
+        sloc = rem_ansi(slocs[idx])
+        lfile, lline = parse_line(sloc)
+        if not sloc[:lfile] in files:
+            files.append(sloc[:lfile])
+
+    try:
+        grep_slocs = grep("-H " + quote(cmd_arg.strip()), True, False, files)
+    except IOError as e:
+        return error("grep failed: " + e)
+    grep_slocs = filter(None, grep_slocs)
+
+    try:
+        print_slocs(grep_slocs, options.noless, options.noheader)
+    except IOError as e:
+        return error("print command failed: " + e)
+
+    x = raw_input(green("Update match cache? (N/y) "))
+    if not ("y" in x or 'Y' in x):
+        return
+    dump(grep_slocs)
+    slocs[:] = grep_slocs
+
 ################################################################
 # Backend Input/Output Functions
 ################################################################
@@ -541,7 +568,7 @@ def execute(cmd):
     return stdout
 
 
-def grep(grep_args, nogit, nogitsubmodules):
+def grep(grep_args, nogit, nogitsubmodules, files=None):
     """
     Search symbol in current Git tree and return the output. If %nogit is set
     grep is called instead of git grep.
@@ -551,8 +578,12 @@ def grep(grep_args, nogit, nogitsubmodules):
     if nogit is True:
         # overwrite grep colors to only highlight matches
         colors = "GREP_COLORS='ms=01;31:mc=:sl=:cx=:fn=:ln=:bn=:se='"
-        grep_args += " -r"
-        return execute("%s grep -Z %s ." % (colors, grep_args)).rsplit("\n")
+        if files is None:
+            grep_args += " -r ."
+        else:
+            for filename in files:
+                grep_args += " %s" % quote(filename)
+        return execute("%s grep -Z %s" % (colors, grep_args)).rsplit("\n")
 
     colors = "-c 'color.grep.match=red bold'"
     git_grep_cmd = "HOME= git %s grep -z %s" % (colors, grep_args)
