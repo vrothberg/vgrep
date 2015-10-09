@@ -20,6 +20,11 @@ import signal
 from array import array
 from pipes import quote
 from subprocess import Popen, PIPE, STDOUT
+try:
+    import readline
+except:
+    pass
+
 
 HOMEDIR = os.getenv("HOME")
 CACHE = HOMEDIR + "/.cache/vgrep"
@@ -34,7 +39,7 @@ def parse_options():
     """
     parser = argparse.ArgumentParser()
     parser.add_argument('-s', '--show', dest='show', action='store',
-                        default="",
+                        default=False, nargs='?',
                         help="show indexed location in the system's editor")
     parser.add_argument('--no-git', dest='nogit', action='store_true',
                         default=False,
@@ -79,29 +84,6 @@ def main():
     """
     args, gitargs = parse_options()
 
-    if args.show:
-        slocs = load()
-        cwd = rem_ansi(slocs.pop(0))
-        if cwd != os.getcwd():
-            sys.exit("Change directory to %s to show locations" % cwd)
-
-        if slocs is None:
-            sys.exit("Please grep for a symbol first")
-
-        index = None
-        try:
-            index = int(args.show)
-            sloc = rem_ansi(slocs[index])
-        except (ValueError, IndexError):
-            sys.exit("Please specify a valid index")
-
-        lfile, lline = parse_line(sloc)
-        if lfile == -1 or lline == -1:
-            sys.exit("Please specify a valid index")
-        cmd = "%s +%s %s" % (EDITOR, sloc[lfile+1:lline], sloc[:lfile])
-        pop = Popen(cmd, shell=True)
-        pop.wait()
-        sys.exit(0)
 
     if gitargs:
         gitargs = ["'%s'" % x for x in gitargs]  # needed to pass args to grep
@@ -130,15 +112,72 @@ def main():
         slocs = load()
         if not slocs:
             sys.exit("Could not load cached data")
-        cwd = slocs.pop(0)
+        cwd = rem_ansi(slocs.pop(0))
         if cwd != os.getcwd():
             sys.exit("Change directory to %s to show locations" % cwd)
+        if slocs is None:
+            sys.exit("Please grep for a symbol first")
 
+    if (gitargs and args.show is None) or args.show is False:
+        try:
+            print_slocs(slocs, args.noless, args.noheader)
+        except IOError:
+            pass
+
+    ret = None
+    # -s given but no show string given
+    if args.show is None:
+        show_help = True
+        while True:
+            try:
+                show_expr = ask_show_expr(show_help)
+            except EOFError:
+                break
+            show_help = False
+            dispatch_show_cmd(show_expr, slocs, args)
+    elif args.show:
+        ret = dispatch_show_cmd(args.show, slocs, args)
+
+    if ret == error:
+        sys.exit(-1)
+
+
+def ask_show_expr(verbose=False):
+    if verbose:
+        print "help: <Selector><Cmd>"
+        print "      Selector: ",\
+            blu("`3'"), "(one)",\
+            blu("`5,23'"),"(mult.)",\
+            blu("`7-10'"), "(range)",\
+            blu("`/ker.el/'"), "(regex)"
+        print "      Cmd: ",\
+            blu("p")+"rint,",\
+            blu("s")+"how,",\
+            blu("c")+"ontext,",\
+            blu("f")+"iles,",\
+            "e" + blu("x")+"ecute,",\
+            blu("q")+"uit,"
+        print '      E.g.: 40,45s -- show matches 40 and 45 in $EDITOR'
+
+    return raw_input(green("What do you want to see?> "))
+
+def dispatch_show_cmd(show_expr, slocs, options):
     try:
-        print_slocs(slocs, args.noless, args.noheader)
-    except:
-        pass
+        indices, cmd, cmd_arg = parse_show(show_expr, slocs)
+    except (ValueError, IndexError, AssertionError) as e:
+        return error("parse error: " + str(e))
 
+    options.show_cmds = {
+        's': show_cmd_open,
+    }
+    if not cmd in options.show_cmds:
+        return error("Command not implemented: %s" % cmd)
+    return options.show_cmds[cmd](slocs, indices, cmd_arg, options)
+
+
+################################################################
+# Utility Functions
+################################################################
 
 def yel(string, light=0):
     """
@@ -173,6 +212,15 @@ def und(string):
     """
     return "\033[4m%s\033[0m" % string
 
+def warning(msg):
+    """Prints a warning to the terminal"""
+    print yel("Warning:", True), msg
+    return warning
+
+def error(msg):
+    """Prints an error message"""
+    print msg
+    return error
 
 def rem_ansi(string):
     """
@@ -180,8 +228,81 @@ def rem_ansi(string):
     """
     return ANSI_REG.sub('', string)
 
+################################################################
+# Parse Input Functions
+################################################################
 
-def print_slocs(slocs, noless, noheader):
+def parse_show(show, slocs):
+    m = re.match("^([0-9, :-]*|/[^/]*/)([hqspPfcx].*)?$", show)
+    assert m, "invalid show expression: " + show
+    if m.groups()[1] is None:
+        cmd = 's'
+        args = ''
+    elif m.group(2):
+        cmd = m.group(2)[0]
+        args = m.group(2)[1:]
+    else:
+        assert not m.group(3), "invalid show expression: " + show
+
+    indices = []
+    # If range is '', select all
+    if not m.group(1):
+        return range(0, len(slocs)), cmd, args
+    # Parse regex
+    if m.group(1).startswith("/"):
+        regex = re.compile(m.group(1)[1:-1])
+        for idx, line in enumerate(slocs):
+            if re.search(regex, line):
+                indices.append(idx)
+        return indices, cmd, args
+
+    # parse literal range expressions
+    for subrange in filter(None, re.split("[ ,]", m.group(1))):
+        if '-' in subrange or ':' in subrange:
+            if ':' in subrange:
+                start, end = subrange.split(':', 1)
+            else:
+                start, end = subrange.split('-', 1)
+            if not start:
+                start = "0"
+            if not end:
+                end = str(len(slocs)-1)
+            indices.extend(range(int(start), int(end) + 1))
+        else:
+            indices.append(int(subrange))
+    assert all([x < len(slocs) for x in indices]), "range item too large"
+    return indices, cmd, args
+
+################################################################
+# Show Commands
+################################################################
+
+def show_cmd_open(slocs, indices, cmd_arg, option):
+    """Opens $EDITOR for every match.
+
+       This command does open the program, given by the $EDITOR
+       environment variable, for every selected match at the given line.
+
+    """
+    if len(indices) > 3:
+        x = raw_input("Matched %s lines, really visited them all? (N/y)" % len(indices))
+        if not ("y" in x or 'Y' in x):
+            return
+    for idx in indices:
+        sloc = rem_ansi(slocs[idx])
+        lfile, lline = parse_line(sloc)
+        if lfile == -1 or lline == -1:
+            return error("Please specify a valid index")
+        cmd = "%s +%s %s" % (EDITOR, sloc[lfile+1:lline], sloc[:lfile])
+        pop = Popen(cmd, shell=True)
+        pop.wait()
+
+
+################################################################
+# Backend Input/Output Functions
+################################################################
+
+def print_slocs(slocs, noless, noheader, indices=None):
     """
     Print SLOCS on terminal.
     """
@@ -192,10 +313,13 @@ def print_slocs(slocs, noless, noheader):
     lengths = array('i', [])
 
     pl = parse_line  # makes it faster by avoiding function lookups
-    for sloc in slocs:
-        sloc = rem_ansi(sloc)
+    for i in range(0, len(slocs)):
+        if indices is not None and not i in indices:
+            lengths.append(-1)
+            lengths.append(-1)
+            continue
+        sloc = rem_ansi(slocs[i])
         lfile, lline = pl(sloc)
-
         lengths.append(lfile)
         lengths.append(lline)
         if lfile > max_file:
@@ -225,6 +349,10 @@ def print_slocs(slocs, noless, noheader):
 
     lfile, lline, lcount = 0, 0, 0
     for i in range(0, len(slocs)):
+        # If we have an index set, print only those
+        if indices is not None and (not i in indices):
+            continue
+
         sloc = rem_ansi(slocs[i])
         lfile = lengths[i*2] + 1
         lline = lengths[i*2 + 1] + 1
