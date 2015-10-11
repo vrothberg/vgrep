@@ -22,7 +22,7 @@ from pipes import quote
 from subprocess import Popen, PIPE, STDOUT
 try:
     import readline
-except:
+except ImportError:
     pass
 
 
@@ -134,38 +134,41 @@ def main():
             except EOFError:
                 break
             show_help = False
-            dispatch_show_cmd(show_expr, slocs, args)
+            dispatch_show_expr(show_expr, slocs, args)
     elif args.show:
-        ret = dispatch_show_cmd(args.show, slocs, args)
+        ret = dispatch_show_expr(args.show, slocs, args)
 
     if ret == error:
         sys.exit(-1)
 
 
 def ask_show_expr(verbose=False):
+    """Prompts the user for a show expression. If verbose is given, a
+       short help is printed beforehand."""
     if verbose:
         print "help: <Selector><Cmd>"
         print "      Selector: ",\
             blu("`3'"), "(one)",\
-            blu("`5,23'"),"(mult.)",\
+            blu("`5,23'"), "(mult.)",\
             blu("`7-10'"), "(range)",\
             blu("`/ker.el/'"), "(regex)"
         print "      Cmd: ",\
-            blu("p")+"rint,",\
-            blu("s")+"how,",\
-            blu("c")+"ontext,",\
-            blu("f")+"iles,",\
-            "e" + blu("x")+"ecute,",\
-            blu("q")+"uit,"
+            blu("p") + "rint,",\
+            blu("s") + "how,",\
+            blu("c") + "ontext,",\
+            blu("f") + "iles,",\
+            "e" + blu("x") + "ecute,",\
+            blu("q") + "uit,"
         print '      E.g.: 40,45s -- show matches 40 and 45 in $EDITOR'
 
     return raw_input(green("What do you want to see?> "))
 
-def dispatch_show_cmd(show_expr, slocs, options):
+def dispatch_show_expr(show_expr, slocs, options):
+    """Parses and executes a show expression"""
     try:
         indices, cmd, cmd_arg = parse_show(show_expr, slocs)
-    except (ValueError, IndexError, AssertionError) as e:
-        return error("parse error: " + str(e))
+    except (ValueError, IndexError, AssertionError) as ex:
+        return error("parse error: " + str(ex))
 
     options.show_cmds = {
         's': show_cmd_open,
@@ -241,6 +244,11 @@ def rem_ansi(string):
 ################################################################
 
 def parse_show(show, slocs):
+    """Parses a show expression. Returns the matched indices (as a list of
+       indices into the slocs array, the show command, and the command
+       arguments as a string.
+
+    """
     m = re.match("^([0-9, :-]*|/[^/]*/)([ghqspPfcx].*)?$", show)
     assert m, "invalid show expression: " + show
     if m.groups()[1] is None:
@@ -352,7 +360,7 @@ def show_cmd_print(slocs, indices, cmd_arg, options):
 
 def show_cmd_print_and_save(slocs, indices, cmd_arg, options):
     """Replaces the match cache by the given selection. The selected
-       matches are renumbered and the new match cache is printed.""" 
+       matches are renumbered and the new match cache is printed."""
     match_slocs = []
     for idx in indices:
         match_slocs.append(slocs[idx])
@@ -379,12 +387,12 @@ def show_cmd_context(slocs, indices, cmd_arg, options):
     """
     try:
         context_lines = int(cmd_arg)
-    except:
+    except ValueError:
         context_lines = 10
     try:
         print_contexts(slocs, indices, context_lines, options)
-    except IOError:
-        return error("context command failed: " + e)
+    except IOError as ex:
+        return error("context command failed: " + ex)
 
 def show_cmd_files(slocs, indices, cmd_arg, options):
     """Prints the list of matched files"""
@@ -423,7 +431,7 @@ def show_cmd_execute(slocs, indices, cmd_arg, options):
         '%m': '{match}'
     }
     if not any((x in cmd_arg) for x in format_strings):
-        if len(indices)==1:
+        if len(indices) == 1:
             cmd_arg += " %f"
         else:
             cmd_arg += '{ "%f"}'
@@ -443,9 +451,9 @@ def show_cmd_execute(slocs, indices, cmd_arg, options):
         sloc = rem_ansi(slocs[idx])
         lfile, lline = parse_line(sloc)
         if lfile != -1 and lline != -1:
-            cmd.append(cmd_fmt.format(filename = sloc[:lfile],
-                                      line = sloc[lfile+1:lline],
-                                      match = sloc[lline+1:]))
+            cmd.append(cmd_fmt.format(filename=sloc[:lfile],
+                                      line=sloc[lfile+1:lline],
+                                      match=sloc[lline+1:]))
     cmd = cmd_arg[:start] + "".join(cmd) + cmd_arg[end+1:]
     pop = Popen(cmd, shell=True)
     pop.wait()
@@ -648,10 +656,14 @@ def load():
     """
     try:
         return pickle.load(open(CACHE, "rb"))
-    except:
+    except (IOError, pickle.PickleError):
         return None
 
 def print_contexts(slocs, indices, context_lines, args):
+    """
+       Prints context_lines lines before and after the matches given by
+       the indices into the slocs array.
+    """
     fdc = sys.stdout
     pop = None
     if args.noless is False:
@@ -673,11 +685,10 @@ def print_contexts(slocs, indices, context_lines, args):
             delim = "%s %s %s %s" % (yel("-----"),
                                      yel(i, True),
                                      blu(sloc[:lfile], True),
-                                     green("(%s-%s)" %(start, end))
-            )
+                                     green("(%s-%s)" %(start, end)))
             fdc.write("%s %s\n" %(delim, yel("-" * (79-len(rem_ansi(delim))))))
             for l in range(start, end + 1):
-                fdc.write(green('{0:>{1}}'.format(l, width),l==line) + " ")
+                fdc.write(green('{0:>{1}}'.format(l, width), l == line) + " ")
                 if l == line:
                     fdc.write(slocs[i][lline+1:])
                     fdc.write("\n")
