@@ -24,6 +24,15 @@ import signal
 from array import array
 from pipes import quote
 from subprocess import Popen, PIPE, STDOUT
+from itertools import takewhile
+
+try:
+    from pygments import highlight
+    from pygments.lexers import guess_lexer_for_filename, guess_lexer
+    from pygments.formatters.terminal import TerminalFormatter
+    PYGMENTS_AVAILABLE = True
+except ImportError:
+    PYGMENTS_AVAILABLE = False
 
 
 HOMEDIR = os.getenv("HOME")
@@ -54,6 +63,10 @@ def parse_options():
                         default=False,
                         help="do not print the pretty header at the top of "
                              "the results")
+    parser.add_argument('--no-highlight', dest='nohighlight', action='store_true',
+                        default=False,
+                        help="do not syntax highlight code")
+
     args, gitargs = parser.parse_known_args()
     return args, gitargs
 
@@ -83,6 +96,9 @@ def main():
     Main routine of this module.
     """
     args, gitargs = parse_options()
+    if args.nohighlight:
+        global PYGMENTS_AVAILABLE
+        PYGMENTS_AVAILABLE = False
 
     if gitargs:
         gitargs = ["'%s'" % x for x in gitargs]  # needed to pass args to grep
@@ -700,6 +716,53 @@ def load():
         return None
 
 
+def merge_colors(str_a, str_b):
+    """Merge the color codes from two strings. If the two strings are not
+       mergable, return the first string"""
+    original_string = str_b
+    ret_str = ""
+    while len(str_a) and len(str_b):
+        m0 = re.match(ANSI_REG, str_a)
+        if m0:
+            ret_str += str_a[:m0.end(0)]
+            str_a = str_a[m0.end(0):]
+        m1 = re.match(ANSI_REG, str_b)
+        if m1:
+            ret_str += str_b[:m1.end(0)]
+            str_b = str_b[m1.end(0):]
+        if not m0 and not m1:
+            idx = str_a.find("\x1b")
+            idx_b = str_b.find("\x1b")
+            if idx == -1 or (idx_b < idx and idx_b > 0):
+                idx = idx_b
+            if idx == -1:
+                idx = len(str_a)
+            if str_a[:idx] != str_b[:idx]:
+                return original_string
+            ret_str += str_a[:idx]
+            str_a, str_b = str_a[idx:], str_b[idx:]
+    return ret_str
+
+def colorize_code_snippet(snippet_lines, start_of_file):
+    try:
+        lexer = guess_lexer_for_filename(filename, start_of_file)
+    except:
+        try:
+            lexer = guess_lexer(start_of_file)
+        except:
+            lexer = None
+    if lexer:
+        empty_lines_before = len(list(takewhile(lambda x: x == "", snippet_lines)))
+        empty_lines_after  = len(list(takewhile(lambda x: x == "", reversed(snippet_lines))))
+
+        out = highlight("\n".join(snippet_lines), lexer, TerminalFormatter())
+        line_count = len(snippet_lines)
+        snippet_lines = out.rstrip("\n").split("\n")
+        # pygment seems to remove empty lines before the source code
+        snippet_lines = [""]*empty_lines_before + snippet_lines + [""]*empty_lines_after
+    return snippet_lines
+
+
 def print_contexts(slocs, indices, context_lines, args):
     """
     Prints context_lines lines before and after the matches given by
@@ -714,29 +777,57 @@ def print_contexts(slocs, indices, context_lines, args):
         fdc = pop.stdin
         to_bin = True
 
-    for i in indices:
-        sloc = rem_ansi(slocs[i])
-        lfile, lline = parse_line(sloc)
+    for idx in indices:
+        sloc = slocs[idx]
+        lfile, lline = parse_line(rem_ansi(sloc))
         if lfile == -1 or lline == -1:
             continue
-        with open(sloc[:lfile]) as fd:
-            line = int(sloc[lfile+1:lline])
+        filename = sloc[:lfile]
+        match_line = int(sloc[lfile+1:lline])-1
+        match_content = sloc[lline+1:]
+        with open(filename) as fd:
             lines = fd.readlines()
-            start = max(1, line - context_lines)
-            end = min(line + context_lines, len(lines)-1)
+            start = max(0, match_line - context_lines)
+            end = min(match_line + context_lines, len(lines)-1)
             width = len(str(end))
             delim = "%s %s %s %s" % (yel("-----"),
-                                     yel(i, True),
-                                     blu(sloc[:lfile], True),
-                                     green("(%s-%s)" % (start, end)))
-            fdwrite(fdc, to_bin, "%s %s\n" % (delim, yel("-" * (79-len(rem_ansi(delim))))))
-            for j in range(start, end + 1):
-                fdwrite(fdc, to_bin, green('{0:>{1}}'.format(j, width), j == line) + " ")
-                if j == line:
-                    fdwrite(fdc, to_bin, slocs[i][lline+1:])
-                    fdwrite(fdc, to_bin, "\n")
-                else:
-                    fdwrite(fdc, to_bin, lines[j-1])
+                                     yel(idx, True),
+                                     blu(filename, True),
+                                     green("(%s-%s)" % (start+1, end+1)))
+            fdc.write("%s %s\n" % (delim, yel("-" * (79-len(rem_ansi(delim))))))
+            output_lines = [x.rstrip("\n") for x in lines[start:end+1]]
+            if PYGMENTS_AVAILABLE:
+                line_count = len(output_lines)
+                start_of_file = "".join(lines[:min(30,len(lines))])
+                added_before = 0
+                added_after = 0
+                # Add a little bit of context to improve the highlighting
+                while True:
+                    if added_before > 30 or (start-added_before-1) < 0:
+                        break
+                    added_before += 1
+                    output_lines = [lines[start - added_before].rstrip("\n")] + output_lines
+                    if output_lines[0] == '':
+                        break
+
+                while True:
+                    if added_after > 30 or (end+added_after+1) >= len(lines):
+                        break
+                    added_after += 1
+                    output_lines += [lines[end+added_after].rstrip("\n")]
+                    if output_lines[-1] == '':
+                        break
+
+                output_lines = colorize_code_snippet(output_lines, start_of_file)
+                output_lines = output_lines[added_before:added_before+line_count]
+                output_lines[match_line-start] = merge_colors(output_lines[match_line-start], match_content)
+            else:
+                output_lines[match_line-start] = match_content
+            for line_nr, text in enumerate(output_lines, start+1):
+                fdc.write(green('{0:>{1}}'.format(line_nr, width),
+                                (line_nr-1) == match_line) + " ")
+                fdc.write(text)
+                fdc.write("\n")
     if pop:
         fdc.close()
         pop.wait()
