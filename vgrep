@@ -705,9 +705,9 @@ def print_contexts(slocs, indices, context_lines, args):
         lfile, lline = parse_line(sloc)
         if lfile == -1 or lline == -1:
             continue
-        with open(sloc[:lfile]) as fdc:
+        with open(sloc[:lfile]) as fd:
             line = int(sloc[lfile+1:lline])
-            lines = fdc.readlines()
+            lines = fd.readlines()
             start = max(1, line - context_lines)
             end = min(line + context_lines, len(lines)-1)
             width = len(str(end))
