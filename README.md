@@ -20,10 +20,6 @@ and share.
 - Run vgrep without arguments to see the results of the last query.
 
 An example call could look as follows:
-``` bash
-[~/linux/kernel/irq]$ vgrep request_irq
-```
-
 ![](https://github.com/vrothberg/vgrep/blob/master/screenshots/grep_example.png)
 
 ####vgrep-specific options:
