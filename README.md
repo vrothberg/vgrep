@@ -20,6 +20,10 @@ and share.
 - Run vgrep without arguments to see the results of the last query.
 
 An example call could look as follows:
+``` bash
+[~/linux/kernel/irq]$ vgrep request_irq
+```
+
 ![](https://github.com/vrothberg/vgrep/blob/master/screenshots/grep_example.png)
 
 ####vgrep-specific options:
@@ -46,11 +50,12 @@ no option *-w* it will be passed to (git) grep respectively.
 - Please refer to their manuals for further information.
 
 ###Show indexed location
+
 To visit a specific location pass **'--show INDEX'**.  vgrep will then open the
 location pointed to by *INDEX* with the editor that is set in your *enviroment*.
 vgrep defaults to *vim* if the *EDITOR* environment variable is not set.
 
-```
+``` bash
 [~/linux/kernel/irq]$ export EDITOR=gedit
 [~/linux/kernel/irq]$ vgrep --show 4
 ```
@@ -58,7 +63,8 @@ vgrep defaults to *vim* if the *EDITOR* environment variable is not set.
 ![](https://github.com/vrothberg/vgrep/blob/master/screenshots/show_example.png)
 
 ####Show Expressions
-Once you vgreped, you can perform certain operations on the results, such as
+
+Once vgreped, you can perform certain operations on the results, such as
 limiting the range of displayed hits, listing files, etc.
 
 ```
@@ -68,4 +74,5 @@ help: <Selector><Cmd>
       E.g.: 40,45s -- show matches 40 and 45 in $EDITOR
 ```
 
-Thanks to @stettberger for adding this functionality to vgrep.
+Thanks to [stettberger](https://github.com/stettberger) for adding this
+functionality to vgrep.
