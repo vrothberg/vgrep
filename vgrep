@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 """
 This module is a reimpementation of the ancient cgvg perl scripts.
@@ -89,7 +89,7 @@ def main():
         grep_args = " ".join(gitargs)
 
         slocs = grep(grep_args, args.nogit, args.nogitsubmodules)
-        slocs = filter(None, slocs)  # filter empty hits
+        slocs = [x for x in slocs if x]  # filter empty hits
         if not slocs:
             # dump and exit if there is not hit
             dump(slocs)
@@ -146,22 +146,22 @@ def ask_show_expr(verbose=False):
     printed beforehand.
     """
     if verbose:
-        print "help: <Selector><Cmd>"
-        print "      Selector: ",       \
-            yel("`3'"), "(one)",        \
-            yel("`5,23'"), "(mult.)",   \
-            yel("`7-10'"), "(range)",   \
-            yel("`/ker.el/'"), "(regex)"
-        print "      Cmd: ",            \
-            yel("p") + "rint,",         \
-            yel("s") + "how,",          \
-            yel("c") + "ontext,",       \
-            yel("f") + "iles,",         \
-            "e" + yel("x") + "ecute,",  \
-            yel("q") + "uit,"
-        print '      E.g.: 40,45s -- show matches 40 and 45 in $EDITOR'
+        print("help: <Selector><Cmd>")
+        print("      Selector: ",
+              yel("`3'"), "(one)",
+              yel("`5,23'"), "(mult.)",
+              yel("`7-10'"), "(range)",
+              yel("`/ker.el/'"), "(regex)")
+        print("      Cmd: ",
+              yel("p") + "rint,",
+              yel("s") + "how,",
+              yel("c") + "ontext,",
+              yel("f") + "iles,",
+              "e" + yel("x") + "ecute,",
+              yel("q") + "uit,")
+        print('      E.g.: 40,45s -- show matches 40 and 45 in $EDITOR')
 
-    return raw_input(green("What do you want to see?> "))
+    return input(green("What do you want to see?> "))
 
 
 def dispatch_show_expr(show_expr, slocs, options):
@@ -231,7 +231,7 @@ def warning(msg):
     """
     Prints a warning to the terminal.
     """
-    print yel("Warning:", True), msg
+    print(yel("Warning:", True), msg)
     return warning
 
 
@@ -239,7 +239,7 @@ def error(msg):
     """
     Prints an error message.
     """
-    print msg
+    print(msg)
     return error
 
 
@@ -274,7 +274,7 @@ def parse_show(show, slocs):
     indices = []
     # If range is '', select all
     if not match.group(1):
-        return range(0, len(slocs)), cmd, args
+        return list(range(0, len(slocs))), cmd, args
     # Parse regex
     if match.group(1).startswith("/"):
         regex = re.compile(match.group(1)[1:-1])
@@ -284,7 +284,7 @@ def parse_show(show, slocs):
         return indices, cmd, args
 
     # parse literal range expressions
-    for subrange in filter(None, re.split("[ ,]", match.group(1))):
+    for subrange in [x for x in re.split("[ ,]", match.group(1)) if x]:
         if '-' in subrange or ':' in subrange:
             if ':' in subrange:
                 start, end = subrange.split(':', 1)
@@ -294,7 +294,7 @@ def parse_show(show, slocs):
                 start = "0"
             if not end:
                 end = str(len(slocs)-1)
-            indices.extend(range(int(start), int(end) + 1))
+            indices.extend(list(range(int(start), int(end) + 1)))
         else:
             indices.append(int(subrange))
     assert all([x < len(slocs) for x in indices]), "range item too large"
@@ -328,7 +328,7 @@ def show_cmd_help(slocs, indices, cmd_arg, options):
     # Replace {commands} by the command list
     if "{commands}" in show_cmd_help.__doc__:
         commands = []
-        for key, val in options.show_cmds.items():
+        for key, val in list(options.show_cmds.items()):
             commands.append("%s -- %s" % (key, val.__name__))
         doc = show_cmd_help \
             .__doc__ .format(commands="\n         ".join(commands))
@@ -353,8 +353,7 @@ def show_cmd_open(slocs, indices, cmd_arg, option):
     for every selected match at the given line.
     """
     if len(indices) > 3:
-        inp = raw_input("Matched %s lines: visit all of them? (N/y) "
-                        % len(indices))
+        inp = input("Matched %s lines: visit all of them? (N/y) " % len(indices))
         if not ("y" in inp or 'Y' in inp):
             return
     for idx in indices:
@@ -425,7 +424,7 @@ def show_cmd_files(slocs, indices, cmd_arg, options):
         lfile, _ = parse_line(sloc)
         if not sloc[:lfile] in files:
             files.append(sloc[:lfile])
-    print '\n'.join(files)
+    print('\n'.join(files))
 
 
 def show_cmd_execute(slocs, indices, cmd_arg, options):
@@ -467,7 +466,7 @@ def show_cmd_execute(slocs, indices, cmd_arg, options):
                          "use {..%f..%n} to repeat")
     cmd = []
     cmd_fmt = cmd_arg[start+1:end]
-    for f, t in format_strings.items():
+    for f, t in list(format_strings.items()):
         cmd_fmt = cmd_fmt.replace(f, t)
     for idx in indices:
         sloc = rem_ansi(slocs[idx])
@@ -496,14 +495,14 @@ def show_cmd_grep(slocs, indices, cmd_arg, options):
         grep_slocs = grep("-H " + quote(cmd_arg.strip()), True, False, files)
     except IOError as err:
         return error("grep failed: " + str(err))
-    grep_slocs = filter(None, grep_slocs)
+    grep_slocs = [x for x in grep_slocs if x]
 
     try:
         print_slocs(grep_slocs, options.noless, options.noheader)
     except IOError as err:
         return error("print command failed: " + str(err))
 
-    inp = raw_input(green("Update match cache? (N/y) "))
+    inp = input(green("Update match cache? (N/y) "))
     if not ("y" in inp or 'Y' in inp):
         return
     dump(grep_slocs)
@@ -513,6 +512,16 @@ def show_cmd_grep(slocs, indices, cmd_arg, options):
 ################################################################
 # Backend Input/Output Functions
 ################################################################
+
+def fdwrite(fdc, to_bin, string):
+    """
+    Write @string to the @fdc file descriptor.
+    """
+    if to_bin:
+        fdc.write(string.encode())
+    else:
+        fdc.write(string)
+
 
 def print_slocs(slocs, noless, noheader, indices=None):
     """
@@ -541,10 +550,12 @@ def print_slocs(slocs, noless, noheader, indices=None):
 
     fdc = sys.stdout
     pop = None
+    to_bin = False
     if noless is False:
         signal.signal(signal.SIGINT, signal.SIG_IGN)
         pop = Popen("less -FRXS", shell=True, stdin=PIPE)
         fdc = pop.stdin
+        to_bin = True
 
     if noheader is False:
         if len("Index") > max_indx:
@@ -554,10 +565,10 @@ def print_slocs(slocs, noless, noheader, indices=None):
         if len("Line") > max_line:
             max_line = len("Line")
 
-        fdc.write(und(yel('{0:>{1}}'.format("Index", max_indx))) + " ")
-        fdc.write(und(blu('{0:<{1}}'.format("File", max_file))) + " ")
-        fdc.write(und(green('{0:>{1}}'.format("Line", max_line))) + " ")
-        fdc.write(und("Content") + "\n")
+        fdwrite(fdc, to_bin, und(yel('{0:>{1}}'.format("Index", max_indx))) + " ")
+        fdwrite(fdc, to_bin, und(blu('{0:<{1}}'.format("File", max_file))) + " ")
+        fdwrite(fdc, to_bin, und(green('{0:>{1}}'.format("Line", max_line))) + " ")
+        fdwrite(fdc, to_bin, und("Content") + "\n")
 
     lfile, lline, lcount = 0, 0, 0
     for i in range(0, len(slocs)):
@@ -570,19 +581,19 @@ def print_slocs(slocs, noless, noheader, indices=None):
         lline = lengths[i*2 + 1] + 1
 
         if lfile == 0 or lline == 0:
-            fdc.write(yel("-" * (max_indx+max_file+max_line+2)) + " " + sloc + "\n")
+            fdwrite(fdc, to_bin, yel("-" * (max_indx+max_file+max_line+2)) + " " + sloc + "\n")
             continue
 
         light = lcount % 2
         lcount += 1
 
-        fdc.write(yel('{0:>{1}} '.format(i, max_indx), light))
+        fdwrite(fdc, to_bin, yel('{0:>{1}} '.format(i, max_indx), light))
         fname = sloc[:lfile-1]
         if fname.startswith("./"):
             fname = fname[2:]
-        fdc.write(blu('{0:<{1}} '.format(fname, max_file), light))
-        fdc.write(green('{0:>{1}} '.format(sloc[lfile:lline-1], max_line), light))
-        fdc.write(slocs[i][lline:].lstrip() + "\n")
+        fdwrite(fdc, to_bin, blu('{0:<{1}} '.format(fname, max_file), light))
+        fdwrite(fdc, to_bin, green('{0:>{1}} '.format(sloc[lfile:lline-1], max_line), light))
+        fdwrite(fdc, to_bin, slocs[i][lline:].lstrip() + "\n")
 
     fdc.close()
     if noless is False:
@@ -595,6 +606,7 @@ def execute(cmd):
     """
     pop = Popen(cmd, stdout=PIPE, stderr=STDOUT, shell=True)
     (stdout, _) = pop.communicate()  # wait until finished
+    stdout = stdout.decode()
     if pop.returncode != 0:
         if stdout != '':
             sys.exit("Command failed: %s\n%s" % (cmd, stdout))
@@ -631,7 +643,7 @@ def grep(grep_args, nogit, nogitsubmodules, files=None):
     list_cmd = "git submodule --quiet foreach --recursive %s" % \
                quote('echo "$toplevel/$path"')
     submodules = execute(list_cmd).rsplit("\n")
-    for submodule in filter(None, submodules):
+    for submodule in [x for x in submodules if x]:
         # check if submodule is below the current working directory
         submodule = os.path.normpath(submodule)
         if os.path.commonprefix([submodule, cwd]) != cwd:
@@ -643,7 +655,7 @@ def grep(grep_args, nogit, nogitsubmodules, files=None):
         sub_grep_cmd = "cd %s && %s" % (quote(submodule), git_grep_cmd)
         lines = execute(sub_grep_cmd).rsplit("\n")
         # Prepend the relative submodule path to each line
-        for line in filter(None, lines):
+        for line in [x for x in lines if x]:
             git_grep_results.append(os.path.join(submodule, line))
 
     return git_grep_results
@@ -695,10 +707,12 @@ def print_contexts(slocs, indices, context_lines, args):
     """
     fdc = sys.stdout
     pop = None
+    to_bin = False
     if args.noless is False:
         signal.signal(signal.SIGINT, signal.SIG_IGN)
         pop = Popen("less -FRXS", shell=True, stdin=PIPE)
         fdc = pop.stdin
+        to_bin = True
 
     for i in indices:
         sloc = rem_ansi(slocs[i])
@@ -715,14 +729,14 @@ def print_contexts(slocs, indices, context_lines, args):
                                      yel(i, True),
                                      blu(sloc[:lfile], True),
                                      green("(%s-%s)" % (start, end)))
-            fdc.write("%s %s\n" % (delim, yel("-" * (79-len(rem_ansi(delim))))))
+            fdwrite(fdc, to_bin, "%s %s\n" % (delim, yel("-" * (79-len(rem_ansi(delim))))))
             for j in range(start, end + 1):
-                fdc.write(green('{0:>{1}}'.format(j, width), j == line) + " ")
+                fdwrite(fdc, to_bin, green('{0:>{1}}'.format(j, width), j == line) + " ")
                 if j == line:
-                    fdc.write(slocs[i][lline+1:])
-                    fdc.write("\n")
+                    fdwrite(fdc, to_bin, slocs[i][lline+1:])
+                    fdwrite(fdc, to_bin, "\n")
                 else:
-                    fdc.write(lines[j-1])
+                    fdwrite(fdc, to_bin, lines[j-1])
     if pop:
         fdc.close()
         pop.wait()
