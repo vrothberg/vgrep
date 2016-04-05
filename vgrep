@@ -42,6 +42,7 @@ EDITOR = os.getenv("EDITOR", "vim")
 ANSI_REG = re.compile(r'\x1B\[[0-9;]*[ABCDEFGHJKSTfmnsulh]')
 
 
+
 def parse_options():
     """
     User interface of this module.
@@ -134,7 +135,7 @@ def main():
 
     if (gitargs and args.show is None) or args.show is False:
         try:
-            print_slocs(slocs, args.noless, args.noheader)
+            print_slocs(slocs, None, args)
         except IOError:
             pass
 
@@ -205,6 +206,73 @@ def dispatch_show_expr(show_expr, slocs, options):
     return options.show_cmds[cmd](slocs, indices, cmd_arg, options)
 
 
+class cmd_output:
+    """The cmd_output class is used to abstract columnized output to
+       console or less. This class should be used with a
+       'with'-expression.
+    """
+    def __init__(self, options, columns = []):
+        self.options = options
+        self.columns = columns
+
+    def __enter__(self):
+        header = self.set_columns(self.columns)
+
+        # Start less if necessary
+        self.popen = None
+        self.fdc = sys.stdout
+        if self.options.noless is False:
+            signal.signal(signal.SIGINT, signal.SIG_IGN)
+            self.popen = Popen("less -FRXS", shell=True, stdin=PIPE)
+            self.fdc = self.popen.stdin
+
+        # Write the aligned header of the output
+        if not self.options.noheader and header:
+            self.write(header[:-1] + "\n")
+
+        return self
+
+    def set_columns(self, columns):
+        self.columns = columns
+        idx = 0
+        header = ""
+        format_str_light = u""
+        format_str_bold  = u""
+
+        for col in self.columns:
+            (title, width, color) = col
+            # If the header is largen than the
+            width       = max(width, len(col[0]))
+            header     += und(color("{0:>{1}}".format(col[0], col[1]))) + " "
+            format_str_light += color("{%s:>%s} ", 0) % (idx, width)
+            format_str_bold  += color("{%s:>%s} ", 1) % (idx, width)
+
+            idx += 1
+        if columns:
+            self.format_str_light = format_str_light + "\n"
+            self.format_str_bold  = format_str_bold  + "\n"
+
+        return header
+
+    def write_row(self, cols, bold=False):
+        fmt = self.format_str_light
+        if bold:
+            fmt = self.format_str_bold
+
+        out = fmt.format(*cols)
+        self.write(out)
+
+    def write(self, out):
+        if self.popen:
+            self.fdc.write(out.encode())
+        else:
+            self.fdc.write(out)
+
+    def __exit__(self, exc_type, exc_valye, traceback):
+        self.fdc.close()
+        if self.popen:
+            self.popen.wait()
+
 ################################################################
 # Utility Functions
 ################################################################
@@ -235,12 +303,26 @@ def blu(string, light=1):
         return "\033[94m%s\033[0m" % string
     return "\033[34m%s\033[0m" % string
 
+def gray(string,bold=1):
+    """
+    Color %string.
+    """
+    if bold:
+        return "\033[1;37m%s\033[0m" % string
+    return "\033[1;30m%s\033[0m" % string
+
 
 def und(string):
     """
     Underline %string.
     """
     return "\033[4m%s\033[0m" % string
+
+def nocolor(string, light=1):
+    """
+    Does not apply any color to the string
+    """
+    return string
 
 
 def warning(msg):
@@ -276,7 +358,7 @@ def parse_show(show, slocs):
     into the slocs array, the show command, and the command arguments as a
     string.
     """
-    match = re.match("^([0-9, :-]*|/[^/]*/)([ghqspPfcx].*)?$", show)
+    match = re.match("^([0-9, :-]*|/[^/]*/)([ghqspPfcxt].*)?$", show)
     assert match, "invalid show expression: " + show
     if match.groups()[1] is None:
         cmd = 's'
@@ -387,7 +469,7 @@ def show_cmd_print(slocs, indices, cmd_arg, options):
     Prints all matched lines.
     """
     try:
-        print_slocs(slocs, options.noless, options.noheader, set(indices))
+        print_slocs(slocs, set(indices), options)
     except IOError as err:
         return error("print command failed: " + str(err))
 
@@ -406,7 +488,7 @@ def show_cmd_print_and_save(slocs, indices, cmd_arg, options):
     slocs[:] = match_slocs
     # Output the matched lines (reordered)
     try:
-        print_slocs(match_slocs, options.noless, options.noheader)
+        print_slocs(match_slocs, None, options)
     except IOError as err:
         return error("print and save command failed: " + str(err))
 
@@ -434,14 +516,18 @@ def show_cmd_files(slocs, indices, cmd_arg, options):
     """
     Prints the list of matched files.
     """
-    files = []
-    for idx in indices:
-        sloc = rem_ansi(slocs[idx])
-        lfile, _ = parse_line(sloc)
-        if not sloc[:lfile] in files:
-            files.append(sloc[:lfile])
-    print('\n'.join(files))
+    files = {}
+    with cmd_output(options, [("Count", 0, green), ("Filename", 0, nocolor)]) as pipe:
+        for idx in indices:
+            sloc = rem_ansi(slocs[idx])
+            lfile, _ = parse_line(sloc)
+            fn = sloc[:lfile]
+            if not fn in files:
+                files[fn] = 0
+            files[fn] += 1
 
+        for fn in sorted(files):
+            pipe.write_row([files[fn], fn])
 
 def show_cmd_execute(slocs, indices, cmd_arg, options):
     """
@@ -514,7 +600,7 @@ def show_cmd_grep(slocs, indices, cmd_arg, options):
     grep_slocs = [x for x in grep_slocs if x]
 
     try:
-        print_slocs(grep_slocs, options.noless, options.noheader)
+        print_slocs(grep_slocs, None, options)
     except IOError as err:
         return error("print command failed: " + str(err))
 
@@ -524,22 +610,11 @@ def show_cmd_grep(slocs, indices, cmd_arg, options):
     dump(grep_slocs)
     slocs[:] = grep_slocs
 
-
 ################################################################
 # Backend Input/Output Functions
 ################################################################
 
-def fdwrite(fdc, to_bin, string):
-    """
-    Write @string to the @fdc file descriptor.
-    """
-    if to_bin:
-        fdc.write(string.encode())
-    else:
-        fdc.write(string)
-
-
-def print_slocs(slocs, noless, noheader, indices=None):
+def print_slocs(slocs, indices, options):
     """
     Print SLOCS on terminal.
     """
@@ -564,56 +639,31 @@ def print_slocs(slocs, noless, noheader, indices=None):
         if (lline-lfile) > max_line:
             max_line = (lline-lfile)
 
-    fdc = sys.stdout
-    pop = None
-    to_bin = False
-    if noless is False:
-        signal.signal(signal.SIGINT, signal.SIG_IGN)
-        pop = Popen("less -FRXS", shell=True, stdin=PIPE)
-        fdc = pop.stdin
-        to_bin = True
+    with cmd_output(options, [("Index", max_indx, yel),
+                              ("File", max_file, blu),
+                              ("Line", max_line, green),
+                              ("Content", 0, nocolor)]) as pipe:
+        lfile, lline, lcount = 0, 0, 0
+        for i in range(0, len(slocs)):
+            # If we have an index set, print only those
+            if indices is not None and i not in indices:
+                continue
 
-    if noheader is False:
-        if len("Index") > max_indx:
-            max_indx = len("Index")
-        if len("File") > max_file:
-            max_file = len("File")
-        if len("Line") > max_line:
-            max_line = len("Line")
+            sloc = rem_ansi(slocs[i])
+            lfile = lengths[i*2] + 1
+            lline = lengths[i*2 + 1] + 1
 
-        fdwrite(fdc, to_bin, und(yel('{0:>{1}}'.format("Index", max_indx))) + " ")
-        fdwrite(fdc, to_bin, und(blu('{0:<{1}}'.format("File", max_file))) + " ")
-        fdwrite(fdc, to_bin, und(green('{0:>{1}}'.format("Line", max_line))) + " ")
-        fdwrite(fdc, to_bin, und("Content") + "\n")
+            if lfile == 0 or lline == 0:
+                pipe.write(yel("-" * (max_indx+max_file+max_line+2)) + " " + sloc + "\n")
+                continue
 
-    lfile, lline, lcount = 0, 0, 0
-    for i in range(0, len(slocs)):
-        # If we have an index set, print only those
-        if indices is not None and i not in indices:
-            continue
+            lcount += 1
 
-        sloc = rem_ansi(slocs[i])
-        lfile = lengths[i*2] + 1
-        lline = lengths[i*2 + 1] + 1
-
-        if lfile == 0 or lline == 0:
-            fdwrite(fdc, to_bin, yel("-" * (max_indx+max_file+max_line+2)) + " " + sloc + "\n")
-            continue
-
-        light = lcount % 2
-        lcount += 1
-
-        fdwrite(fdc, to_bin, yel('{0:>{1}} '.format(i, max_indx), light))
-        fname = sloc[:lfile-1]
-        if fname.startswith("./"):
-            fname = fname[2:]
-        fdwrite(fdc, to_bin, blu('{0:<{1}} '.format(fname, max_file), light))
-        fdwrite(fdc, to_bin, green('{0:>{1}} '.format(sloc[lfile:lline-1], max_line), light))
-        fdwrite(fdc, to_bin, slocs[i][lline:].lstrip() + "\n")
-
-    fdc.close()
-    if noless is False:
-        pop.wait()
+            fname = sloc[:lfile-1]
+            if fname.startswith("./"):
+                fname = fname[2:]
+            pipe.write_row([i, fname, sloc[lfile:lline-1], slocs[i][lline:].lstrip()],
+                           bold=(lcount % 2))
 
 
 def execute(cmd):
@@ -622,7 +672,7 @@ def execute(cmd):
     """
     pop = Popen(cmd, stdout=PIPE, stderr=STDOUT, shell=True)
     (stdout, _) = pop.communicate()  # wait until finished
-    stdout = stdout.decode()
+    stdout = stdout.decode(errors='replace')
     if pop.returncode != 0:
         if stdout != '':
             sys.exit("Command failed: %s\n%s" % (cmd, stdout))
@@ -718,7 +768,20 @@ def load():
 
 def merge_colors(str_a, str_b):
     """Merge the color codes from two strings. If the two strings are not
-       mergable, return the first string"""
+       mergable, return the first string.
+
+       This function searches the earliest 0x1b in both strings, and
+       appends the common prefix to the returning string.
+
+       a = "abc{blue}xyz"
+       b = "abc         x{yellow}yz"
+               ^- Snip here first.
+
+       The preceeding color codes are appended to the return string.
+       And the process is repeated until both strings are consumed.
+
+       ret_str = "abc{blue}b{yellow}yz"
+    """
     original_string = str_b
     ret_str = ""
     while len(str_a) and len(str_b):
@@ -743,7 +806,12 @@ def merge_colors(str_a, str_b):
             str_a, str_b = str_a[idx:], str_b[idx:]
     return ret_str
 
-def colorize_code_snippet(snippet_lines, start_of_file):
+def colorize_code_snippet(filename, snippet_lines, start_of_file):
+    """Colorizes the code snippet (snippet_lines) with pygments and uses
+       the filename and first N bytes (start_of_file) to identify the
+       file type.
+
+    """
     try:
         lexer = guess_lexer_for_filename(filename, start_of_file)
     except:
@@ -763,74 +831,69 @@ def colorize_code_snippet(snippet_lines, start_of_file):
     return snippet_lines
 
 
-def print_contexts(slocs, indices, context_lines, args):
+def print_contexts(slocs, indices, context_lines, options):
     """
     Prints context_lines lines before and after the matches given by
     the indices into the slocs array.
     """
-    fdc = sys.stdout
-    pop = None
-    to_bin = False
-    if args.noless is False:
-        signal.signal(signal.SIGINT, signal.SIG_IGN)
-        pop = Popen("less -FRXS", shell=True, stdin=PIPE)
-        fdc = pop.stdin
-        to_bin = True
+    with cmd_output(options, []) as pipe:
+        for idx in indices:
+            sloc = slocs[idx]
+            lfile, lline = parse_line(rem_ansi(sloc))
+            if lfile == -1 or lline == -1:
+                continue
+            filename = sloc[:lfile]
+            match_line = int(sloc[lfile+1:lline])-1
+            match_content = sloc[lline+1:]
 
-    for idx in indices:
-        sloc = slocs[idx]
-        lfile, lline = parse_line(rem_ansi(sloc))
-        if lfile == -1 or lline == -1:
-            continue
-        filename = sloc[:lfile]
-        match_line = int(sloc[lfile+1:lline])-1
-        match_content = sloc[lline+1:]
-        with open(filename) as fd:
-            lines = fd.readlines()
-            start = max(0, match_line - context_lines)
-            end = min(match_line + context_lines, len(lines)-1)
-            width = len(str(end))
-            delim = "%s %s %s %s" % (yel("-----"),
-                                     yel(idx, True),
-                                     blu(filename, True),
-                                     green("(%s-%s)" % (start+1, end+1)))
-            fdc.write("%s %s\n" % (delim, yel("-" * (79-len(rem_ansi(delim))))))
-            output_lines = [x.rstrip("\n") for x in lines[start:end+1]]
-            if PYGMENTS_AVAILABLE:
-                line_count = len(output_lines)
-                start_of_file = "".join(lines[:min(30,len(lines))])
-                added_before = 0
-                added_after = 0
-                # Add a little bit of context to improve the highlighting
-                while True:
-                    if added_before > 30 or (start-added_before-1) < 0:
-                        break
-                    added_before += 1
-                    output_lines = [lines[start - added_before].rstrip("\n")] + output_lines
-                    if output_lines[0] == '':
-                        break
+            with open(filename) as fd:
+                encoding = sys.getfilesystemencoding()
+                content = fd.read()
+                lines = content.split("\n")
 
-                while True:
-                    if added_after > 30 or (end+added_after+1) >= len(lines):
-                        break
-                    added_after += 1
-                    output_lines += [lines[end+added_after].rstrip("\n")]
-                    if output_lines[-1] == '':
-                        break
+                start = max(0, match_line - context_lines)
+                end = min(match_line + context_lines, len(lines)-1)
+                width = len(str(end))
+                pipe.set_columns([("N", width, green), ("Context", 0, nocolor)])
 
-                output_lines = colorize_code_snippet(output_lines, start_of_file)
-                output_lines = output_lines[added_before:added_before+line_count]
-                output_lines[match_line-start] = merge_colors(output_lines[match_line-start], match_content)
-            else:
-                output_lines[match_line-start] = match_content
-            for line_nr, text in enumerate(output_lines, start+1):
-                fdc.write(green('{0:>{1}}'.format(line_nr, width),
-                                (line_nr-1) == match_line) + " ")
-                fdc.write(text)
-                fdc.write("\n")
-    if pop:
-        fdc.close()
-        pop.wait()
+                # Write Separator
+                delim = "%s %s %s %s" % (yel("-----"),
+                                         yel(idx, True),
+                                         blu(filename, True),
+                                         green("(%s-%s)" % (start+1, end+1)))
+                pipe.write("%s %s\n" % (delim, yel("-" * (79-len(rem_ansi(delim))))))
+                output_lines = [x.rstrip("\n") for x in lines[start:end+1]]
+                if PYGMENTS_AVAILABLE:
+                    line_count = len(output_lines)
+                    start_of_file = "".join(lines[:min(30,len(lines))])
+                    added_before = 0
+                    added_after = 0
+                    # Add a little bit of context to improve the highlighting
+                    while True:
+                        if added_before > 30 or (start-added_before-1) < 0:
+                            break
+                        added_before += 1
+                        output_lines = [lines[start - added_before].rstrip("\n")] + output_lines
+                        if output_lines[0] == '':
+                            break
+
+                    while True:
+                        if added_after > 30 or (end+added_after+1) >= len(lines):
+                            break
+                        added_after += 1
+                        output_lines += [lines[end+added_after].rstrip("\n")]
+                        if output_lines[-1] == '':
+                            break
+
+                    output_lines = colorize_code_snippet(filename, output_lines, start_of_file)
+                    output_lines = output_lines[added_before:added_before+line_count]
+                    output_lines[match_line-start] = merge_colors(output_lines[match_line-start], match_content)
+                else:
+                    output_lines[match_line-start] = match_content
+
+                # Output lines for this context snippet
+                for line_nr, text in enumerate(output_lines, start+1):
+                    pipe.write_row([line_nr, text], bold=(line_nr == (match_line+1)))
 
 
 if __name__ == "__main__":
