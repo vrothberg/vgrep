@@ -173,6 +173,7 @@ def ask_show_expr(verbose=False):
               yel("p") + "rint,",
               yel("s") + "how,",
               yel("c") + "ontext,",
+              yel("t") + "ree,",
               yel("f") + "iles,",
               "e" + yel("x") + "ecute,",
               yel("q") + "uit,")
@@ -200,6 +201,7 @@ def dispatch_show_expr(show_expr, slocs, options):
         'q': show_cmd_quit,
         'h': show_cmd_help,
         'g': show_cmd_grep,
+        't': show_cmd_tree,
     }
     if cmd not in options.show_cmds:
         return error("Command not implemented: %s" % cmd)
@@ -609,6 +611,50 @@ def show_cmd_grep(slocs, indices, cmd_arg, options):
         return
     dump(grep_slocs)
     slocs[:] = grep_slocs
+
+def show_cmd_tree(slocs, indices, cmd_arg, options):
+    """
+    Show a directory tree narrowed down to all matches files. The tree
+    is annoated with match counts and accumulated match counts.
+
+    """
+    try:
+        depth = int(cmd_arg)
+    except ValueError:
+        depth = 10
+    subtrees = {}
+    for idx in indices:
+        sloc = rem_ansi(slocs[idx])
+        lfile, _ = parse_line(sloc)
+        dirname = os.path.dirname(sloc[:lfile])
+        dirs = list(filter(None, dirname.split(os.path.sep, depth)[:depth]))
+        # All parent directories
+        for til in range(0, min(depth, len(dirs))):
+            dirname = os.path.sep.join(dirs[:til])
+            subtrees[dirname] = subtrees.get(dirname, 0+0j) + 1
+        dirname = os.path.sep.join(dirs)
+        subtrees[dirname] = subtrees.get(dirname, 0+0j) + 1j
+
+    col_0 = max([len(str(int(x.real+x.imag))) for x in subtrees.values()])
+    col_1 = max([len(str(int(x.imag))) for x in subtrees.values()])
+
+    with cmd_output(options, [("Sum", col_0, yel),
+                              ("Count", col_1, green),
+                              ("Directory", 0, nocolor)]) as pipe:
+        for dirname, count in sorted(subtrees.items(), key= lambda x: (x[0], len(x[0]))):
+            if not dirname:
+                directory = "."
+                prefix = ""
+            else:
+                directory = os.path.basename(dirname)
+                prefix = os.path.dirname(dirname)
+                if prefix:
+                    prefix += "/"
+
+            pipe.write_row([int(count.imag + count.real),
+                            int(count.imag),
+                            gray(prefix, False) + gray(directory)])
+
 
 ################################################################
 # Backend Input/Output Functions

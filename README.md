@@ -66,7 +66,7 @@ limiting the range of displayed hits, listing files, etc.
 ```
 help: <Selector><Cmd>
       Selector:  `3' (one) `5,23' (mult.) `7-10' (range) `/ker.el/' (regex)
-      Cmd:  print, show, context, files, execute, quit,
+      Cmd:  print, show, context, tree, files, execute, quit,
       E.g.: 40,45s -- show matches 40 and 45 in $EDITOR
 ```
 
