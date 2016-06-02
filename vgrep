@@ -174,6 +174,7 @@ def ask_show_expr(verbose=False):
               yel("s") + "how,",
               yel("c") + "ontext,",
               yel("t") + "ree,",
+              yel("d") + "elete,",
               yel("f") + "iles,",
               "e" + yel("x") + "ecute,",
               yel("q") + "uit,")
@@ -194,6 +195,7 @@ def dispatch_show_expr(show_expr, slocs, options):
     options.show_cmds = {
         's': show_cmd_open,
         'p': show_cmd_print,
+        'd': show_cmd_delete,
         'P': show_cmd_print_and_save,
         'c': show_cmd_context,
         'x': show_cmd_execute,
@@ -360,7 +362,7 @@ def parse_show(show, slocs):
     into the slocs array, the show command, and the command arguments as a
     string.
     """
-    match = re.match("^([0-9, :-]*|/[^/]*/)([ghqspPfcxt].*)?$", show)
+    match = re.match("^([0-9, :-]*|/[^/]*/)([ghqspPfcxtd].*)?$", show)
     assert match, "invalid show expression: " + show
     if match.groups()[1] is None:
         cmd = 's'
@@ -611,6 +613,21 @@ def show_cmd_grep(slocs, indices, cmd_arg, options):
         return
     dump(grep_slocs)
     slocs[:] = grep_slocs
+
+def show_cmd_delete(slocs, indices, cmd_arg, options):
+    """
+    Delete matches from the list
+    """
+    files = []
+    for idx in reversed(sorted(indices)):
+        del slocs[idx]
+
+    try:
+        print_slocs(slocs, None, options)
+    except IOError as err:
+        return error("print command failed: " + str(err))
+
+    dump(slocs)
 
 def show_cmd_tree(slocs, indices, cmd_arg, options):
     """
