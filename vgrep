@@ -27,6 +27,11 @@ from subprocess import Popen, PIPE, STDOUT
 from itertools import takewhile
 
 try:
+    import readline
+except ImportError:
+    pass
+
+try:
     from pygments import highlight
     from pygments.lexers import guess_lexer_for_filename, guess_lexer
     from pygments.formatters.terminal import TerminalFormatter
