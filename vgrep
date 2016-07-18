@@ -249,12 +249,24 @@ class cmd_output:
         format_str_bold  = u""
 
         for col in self.columns:
-            (title, width, color) = col
+            align = "right"
+            if len(col) == 3:
+                (ntitle, width, color) = col
+            if len(col) == 4:
+                (ntitle, width, color, align) = col
+
+            assert align == "left" or align == "right"
+
+            if align == "left":
+                align = "<"
+            else:
+                align = ">"
+
             # If the header is largen than the
             width       = max(width, len(col[0]))
-            header     += und(color("{0:>{1}}".format(col[0], col[1]))) + " "
-            format_str_light += color("{%s:>%s} ", 0) % (idx, width)
-            format_str_bold  += color("{%s:>%s} ", 1) % (idx, width)
+            header     += und(color(("{0:%s{1}}" % align).format(col[0], col[1]))) + " "
+            format_str_light += color("{%s:%s%s} ", 0) % (idx, align, width)
+            format_str_bold  += color("{%s:%s%s} ", 1) % (idx, align, width)
 
             idx += 1
         if columns:
@@ -708,7 +720,7 @@ def print_slocs(slocs, indices, options):
             max_line = (lline-lfile)
 
     with cmd_output(options, [("Index", max_indx, yel),
-                              ("File", max_file, blu),
+                              ("File", max_file, blu, "left"),
                               ("Line", max_line, green),
                               ("Content", 0, nocolor)]) as pipe:
         lfile, lline, lcount = 0, 0, 0
