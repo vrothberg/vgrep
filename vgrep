@@ -121,8 +121,8 @@ def main():
         if not re.match(r"^[^:\0]+[:\0]\d+[\0:-].*$", test):
             sys.stderr.write("Wrong format from (git) grep: '%s'\n" % test)
             sys.stderr.write("vgrep expects the format '%s:%s:%s' or '%s\\0%s\\0%s'\n"
-                             % (blu('file'), green('line'), 'content',
-                                blu('file'), green('line'), 'content'))
+                             % (blue('file'), green('line'), 'content',
+                                blue('file'), green('line'), 'content'))
             sys.exit(1)
 
         dump(slocs)
@@ -169,19 +169,19 @@ def ask_show_expr(verbose=False):
     if verbose:
         print("help: <Selector><Cmd>")
         print("      Selector: ",
-              yel("`3'"), "(one)",
-              yel("`5,23'"), "(mult.)",
-              yel("`7-10'"), "(range)",
-              yel("`/ker.el/'"), "(regex)")
+              yellow("`3'"), "(one)",
+              yellow("`5,23'"), "(mult.)",
+              yellow("`7-10'"), "(range)",
+              yellow("`/ker.el/'"), "(regex)")
         print("      Cmd: ",
-              yel("p") + "rint,",
-              yel("s") + "how,",
-              yel("c") + "ontext,",
-              yel("t") + "ree,",
-              yel("d") + "elete,",
-              yel("f") + "iles,",
-              "e" + yel("x") + "ecute,",
-              yel("q") + "uit,")
+              yellow("p") + "rint,",
+              yellow("s") + "how,",
+              yellow("c") + "ontext,",
+              yellow("t") + "ree,",
+              yellow("d") + "elete,",
+              yellow("f") + "iles,",
+              "e" + yellow("x") + "ecute,",
+              yellow("q") + "uit,")
         print('      E.g.: 40,45s -- show matches 40 and 45 in $EDITOR')
 
     return input(green("What do you want to see?> "))
@@ -309,7 +309,7 @@ class cmd_output:
 # Utility Functions
 ################################################################
 
-def yel(string, light=1):
+def yellow(string, light=1):
     """
     Color %string.
     """
@@ -327,7 +327,7 @@ def green(string, light=1):
     return "\033[32m%s\033[0m" % string
 
 
-def blu(string, light=1):
+def blue(string, light=1):
     """
     Color %string.
     """
@@ -361,7 +361,7 @@ def warning(msg):
     """
     Prints a warning to the terminal.
     """
-    print(yel("Warning:", True), msg)
+    print(yellow("Warning:", True), msg)
     return warning
 
 
@@ -681,7 +681,7 @@ def show_cmd_tree(slocs, indices, cmd_arg, options):
     col_0 = max([len(str(int(x.real+x.imag))) for x in subtrees.values()])
     col_1 = max([len(str(int(x.imag))) for x in subtrees.values()])
 
-    with cmd_output(options, [("Sum", col_0, yel),
+    with cmd_output(options, [("Sum", col_0, yellow),
                               ("Count", col_1, green),
                               ("Directory", 0, nocolor)]) as pipe:
         for dirname, count in sorted(subtrees.items(), key=lambda x: (x[0], len(x[0]))):
@@ -728,8 +728,8 @@ def print_slocs(slocs, indices, options):
         if (lline-lfile) > max_line:
             max_line = (lline-lfile)
 
-    with cmd_output(options, [("Index", max_indx, yel),
-                              ("File", max_file, blu, "left"),
+    with cmd_output(options, [("Index", max_indx, yellow),
+                              ("File", max_file, blue, "left"),
                               ("Line", max_line, green),
                               ("Content", 0, nocolor)]) as pipe:
         lfile, lline, lcount = 0, 0, 0
@@ -743,7 +743,7 @@ def print_slocs(slocs, indices, options):
             lline = lengths[i*2 + 1] + 1
 
             if lfile == 0 or lline == 0:
-                pipe.write(yel("-" * (max_indx+max_file+max_line+2)) + " " + sloc + "\n")
+                pipe.write(yellow("-" * (max_indx+max_file+max_line+2)) + " " + sloc + "\n")
                 continue
 
             lcount += 1
@@ -944,11 +944,11 @@ def print_contexts(slocs, indices, context_lines, options):
                 pipe.set_columns([("N", width, green), ("Context", 0, nocolor)])
 
                 # Write Separator
-                delim = "%s %s %s %s" % (yel("-----"),
-                                         yel(idx, True),
-                                         blu(filename, True),
+                delim = "%s %s %s %s" % (yellow("-----"),
+                                         yellow(idx, True),
+                                         blue(filename, True),
                                          green("(%s-%s)" % (start+1, end+1)))
-                pipe.write("%s %s\n" % (delim, yel("-" * (79-len(rem_ansi(delim))))))
+                pipe.write("%s %s\n" % (delim, yellow("-" * (79-len(rem_ansi(delim))))))
                 output_lines = [x.rstrip("\n") for x in lines[start:end+1]]
 
                 # Colorize context lines with pygments if available and desired
