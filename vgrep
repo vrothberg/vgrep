@@ -6,13 +6,12 @@ This module is a reimpementation of the ancient cgvg perl scripts.
 Visit https://github.com/vrothberg/vgrep for more information.
 """
 
-# (c) 2015 Valentin Rothberg <valentinrothberg@gmail.com>
+# (c) 2015-2016 Valentin Rothberg <valentinrothberg@gmail.com>
 #
 # Licensed under the terms of the GNU GPL License version 3
 
 # Ignore some annoying pylint warnings
 # pylint: disable=W0613
-# pylint: disable=W0141
 
 import argparse
 import os
@@ -216,13 +215,17 @@ def dispatch_show_expr(show_expr, slocs, options):
 
 
 class cmd_output:
-    """The cmd_output class is used to abstract columnized output to
-       console or less. This class should be used with a
-       'with'-expression.
     """
-    def __init__(self, options, columns = []):
+    The cmd_output class is used to abstract columnized output to console or
+    less. This class should be used with a 'with'-expression.
+    """
+    def __init__(self, options, columns=[]):
         self.options = options
         self.columns = columns
+        self.format_str_light = u""
+        self.format_str_bold = u""
+        self.fdc = None
+        self.popen = None
 
     def __enter__(self):
         header = self.set_columns(self.columns)
@@ -242,18 +245,21 @@ class cmd_output:
         return self
 
     def set_columns(self, columns):
+        """
+        Calculate formatting for %columns.
+        """
         self.columns = columns
         idx = 0
         header = ""
         format_str_light = u""
-        format_str_bold  = u""
+        format_str_bold = u""
 
         for col in self.columns:
             align = "right"
             if len(col) == 3:
-                (ntitle, width, color) = col
+                (_, width, color) = col
             if len(col) == 4:
-                (ntitle, width, color, align) = col
+                (_, width, color, align) = col
 
             assert align == "left" or align == "right"
 
@@ -262,20 +268,22 @@ class cmd_output:
             else:
                 align = ">"
 
-            # If the header is largen than the
-            width       = max(width, len(col[0]))
-            header     += und(color(("{0:%s{1}}" % align).format(col[0], col[1]))) + " "
+            width = max(width, len(col[0]))
+            header += und(color(("{0:%s{1}}" % align).format(col[0], col[1]))) + " "
             format_str_light += color("{%s:%s%s} ", 0) % (idx, align, width)
-            format_str_bold  += color("{%s:%s%s} ", 1) % (idx, align, width)
+            format_str_bold += color("{%s:%s%s} ", 1) % (idx, align, width)
 
             idx += 1
         if columns:
             self.format_str_light = format_str_light + "\n"
-            self.format_str_bold  = format_str_bold  + "\n"
+            self.format_str_bold = format_str_bold  + "\n"
 
         return header
 
     def write_row(self, cols, bold=False):
+        """
+        Write %cols as rows.
+        """
         fmt = self.format_str_light
         if bold:
             fmt = self.format_str_bold
@@ -284,6 +292,9 @@ class cmd_output:
         self.write(out)
 
     def write(self, out):
+        """
+        Write %out to file descriptor (stdout or less).
+        """
         if self.popen:
             self.fdc.write(out.encode())
         else:
@@ -324,7 +335,7 @@ def blu(string, light=1):
         return "\033[94m%s\033[0m" % string
     return "\033[34m%s\033[0m" % string
 
-def gray(string,bold=1):
+def gray(string, bold=1):
     """
     Color %string.
     """
@@ -535,37 +546,37 @@ def show_cmd_context(slocs, indices, cmd_arg, options):
 
 def show_cmd_files(slocs, indices, cmd_arg, options):
     """
-    Prints the list of matched files.
+    Prints the list of matched files in format "Count File"
     """
-    files = {}
-    with cmd_output(options, [("Count", 0, green), ("Filename", 0, nocolor)]) as pipe:
+    count = {}
+    with cmd_output(options, [("Count", 0, green), ("File", 0, nocolor)]) as pipe:
         for idx in indices:
             sloc = rem_ansi(slocs[idx])
             lfile, _ = parse_line(sloc)
-            fn = sloc[:lfile]
-            if not fn in files:
-                files[fn] = 0
-            files[fn] += 1
+            fname = sloc[:lfile]
+            if not fname in count:
+                count[fname] = 0
+            count[fname] += 1
 
-        for fn in sorted(files):
-            pipe.write_row([files[fn], fn])
+        for fname in sorted(count):
+            pipe.write_row([count[fname], fname])
 
 def show_cmd_execute(slocs, indices, cmd_arg, options):
     """
     Execute a command with format strings supplied form match information. When
     multiple matches are selected, a repeating group has to be supplied given.
-    When no format characters are given, the filename(s) are simply appended to
+    When no format characters are given, the file(s) are simply appended to
     the command.
 
     Format Strings:
-        %f -- filename of the match
+        %f -- file of the match
         %n -- line number of match
         %m -- matched file content
 
     Examples:
         1x vim          -- open file of match 1
         2-7x ls -l      -- list matched files
-        3x echo %f:%n   -- outout filename and match line for match 3
+        3x echo %f:%n   -- outout file and match line for match 3
         2-7x echo {%n } -- print matched line numbers
     """
     format_strings = {
@@ -589,8 +600,8 @@ def show_cmd_execute(slocs, indices, cmd_arg, options):
                          "use {..%f..%n} to repeat")
     cmd = []
     cmd_fmt = cmd_arg[start+1:end]
-    for f, t in list(format_strings.items()):
-        cmd_fmt = cmd_fmt.replace(f, t)
+    for fmt, var in list(format_strings.items()):
+        cmd_fmt = cmd_fmt.replace(fmt, var)
     for idx in indices:
         sloc = rem_ansi(slocs[idx])
         lfile, lline = parse_line(sloc)
@@ -633,9 +644,8 @@ def show_cmd_grep(slocs, indices, cmd_arg, options):
 
 def show_cmd_delete(slocs, indices, cmd_arg, options):
     """
-    Delete matches from the list
+    Delete matches from the list.
     """
-    files = []
     for idx in reversed(sorted(indices)):
         del slocs[idx]
 
@@ -650,7 +660,6 @@ def show_cmd_tree(slocs, indices, cmd_arg, options):
     """
     Show a directory tree narrowed down to all matches files. The tree
     is annoated with match counts and accumulated match counts.
-
     """
     try:
         depth = int(cmd_arg)
@@ -675,7 +684,7 @@ def show_cmd_tree(slocs, indices, cmd_arg, options):
     with cmd_output(options, [("Sum", col_0, yel),
                               ("Count", col_1, green),
                               ("Directory", 0, nocolor)]) as pipe:
-        for dirname, count in sorted(subtrees.items(), key= lambda x: (x[0], len(x[0]))):
+        for dirname, count in sorted(subtrees.items(), key=lambda x: (x[0], len(x[0]))):
             if not dirname:
                 directory = "."
                 prefix = ""
@@ -807,21 +816,21 @@ def grep(grep_args, nogit, nogitsubmodules, files=None):
     return git_grep_results
 
 
-old_child = None
+OLD_CHILD = None
 
 
 def dump(data):
     """
     Fork and dump %data to the local cache.
     """
-    global old_child
-    if old_child:
-        os.kill(old_child, 15)
-        os.waitpid(old_child, 0)
+    global OLD_CHILD
+    if OLD_CHILD:
+        os.kill(OLD_CHILD, 15)
+        os.waitpid(OLD_CHILD, 0)
 
     child = os.fork()
     if child:
-        old_child = child
+        OLD_CHILD = child
         return
 
     # child process
@@ -847,33 +856,34 @@ def load():
 
 
 def merge_colors(str_a, str_b):
-    """Merge the color codes from two strings. If the two strings are not
-       mergable, return the first string.
+    """
+    Merge the color codes from two strings. If the two strings are not mergable,
+    return the first string.
 
-       This function searches the earliest 0x1b in both strings, and
-       appends the common prefix to the returning string.
+    This function searches the earliest 0x1b in both strings, and appends the
+    common prefix to the returning string.
 
-       a = "abc{blue}xyz"
-       b = "abc         x{yellow}yz"
-               ^- Snip here first.
+    a = "abc{blue}xyz"
+    b = "abc         x{yellow}yz"
+           ^- Snip here first.
 
-       The preceeding color codes are appended to the return string.
-       And the process is repeated until both strings are consumed.
+    The preceeding color codes are appended to the return string.  And the
+    process is repeated until both strings are consumed.
 
-       ret_str = "abc{blue}b{yellow}yz"
+    ret_str = "abc{blue}b{yellow}yz"
     """
     original_string = str_b
     ret_str = ""
     while len(str_a) and len(str_b):
-        m0 = re.match(ANSI_REG, str_a)
-        if m0:
-            ret_str += str_a[:m0.end(0)]
-            str_a = str_a[m0.end(0):]
-        m1 = re.match(ANSI_REG, str_b)
-        if m1:
-            ret_str += str_b[:m1.end(0)]
-            str_b = str_b[m1.end(0):]
-        if not m0 and not m1:
+        matcha = re.match(ANSI_REG, str_a)
+        if matcha:
+            ret_str += str_a[:matcha.end(0)]
+            str_a = str_a[matcha.end(0):]
+        matchb = re.match(ANSI_REG, str_b)
+        if matchb:
+            ret_str += str_b[:matchb.end(0)]
+            str_b = str_b[matchb.end(0):]
+        if not matcha and not matchb:
             idx = str_a.find("\x1b")
             idx_b = str_b.find("\x1b")
             if idx == -1 or (idx_b < idx and idx_b > 0):
@@ -887,10 +897,9 @@ def merge_colors(str_a, str_b):
     return ret_str
 
 def colorize_code_snippet(filename, snippet_lines, start_of_file):
-    """Colorizes the code snippet (snippet_lines) with pygments and uses
-       the filename and first N bytes (start_of_file) to identify the
-       file type.
-
+    """
+    Colorizes the code snippet (snippet_lines) with pygments and uses the
+    filename and first N bytes (start_of_file) to identify the file type.
     """
     try:
         lexer = guess_lexer_for_filename(filename, start_of_file)
@@ -901,10 +910,9 @@ def colorize_code_snippet(filename, snippet_lines, start_of_file):
             lexer = None
     if lexer:
         empty_lines_before = len(list(takewhile(lambda x: x == "", snippet_lines)))
-        empty_lines_after  = len(list(takewhile(lambda x: x == "", reversed(snippet_lines))))
+        empty_lines_after = len(list(takewhile(lambda x: x == "", reversed(snippet_lines))))
 
         out = highlight("\n".join(snippet_lines), lexer, TerminalFormatter())
-        line_count = len(snippet_lines)
         snippet_lines = out.rstrip("\n").split("\n")
         # pygment seems to remove empty lines before the source code
         snippet_lines = [""]*empty_lines_before + snippet_lines + [""]*empty_lines_after
@@ -926,9 +934,8 @@ def print_contexts(slocs, indices, context_lines, options):
             match_line = int(sloc[lfile+1:lline])-1
             match_content = sloc[lline+1:]
 
-            with open(filename) as fd:
-                encoding = sys.getfilesystemencoding()
-                content = fd.read()
+            with open(filename) as fdc:
+                content = fdc.read()
                 lines = content.split("\n")
 
                 start = max(0, match_line - context_lines)
@@ -943,9 +950,11 @@ def print_contexts(slocs, indices, context_lines, options):
                                          green("(%s-%s)" % (start+1, end+1)))
                 pipe.write("%s %s\n" % (delim, yel("-" * (79-len(rem_ansi(delim))))))
                 output_lines = [x.rstrip("\n") for x in lines[start:end+1]]
+
+                # Colorize context lines with pygments if available and desired
                 if PYGMENTS_AVAILABLE:
                     line_count = len(output_lines)
-                    start_of_file = "".join(lines[:min(30,len(lines))])
+                    start_of_file = "".join(lines[:min(30, len(lines))])
                     added_before = 0
                     added_after = 0
                     # Add a little bit of context to improve the highlighting
