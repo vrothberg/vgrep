@@ -696,7 +696,7 @@ def show_cmd_tree(slocs, indices, cmd_arg, options):
 
             pipe.write_row([int(count.imag + count.real),
                             int(count.imag),
-                            gray(prefix, False) + gray(directory)])
+                            prefix + blue(directory)])
 
 
 ################################################################
