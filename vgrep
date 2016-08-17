@@ -46,7 +46,6 @@ EDITOR = os.getenv("EDITOR", "vim")
 ANSI_REG = re.compile(r'\x1B\[[0-9;]*[ABCDEFGHJKSTfmnsulh]')
 
 
-
 def parse_options():
     """
     User interface of this module.
@@ -276,7 +275,7 @@ class cmd_output:
             idx += 1
         if columns:
             self.format_str_light = format_str_light + "\n"
-            self.format_str_bold = format_str_bold  + "\n"
+            self.format_str_bold = format_str_bold + "\n"
 
         return header
 
@@ -309,6 +308,7 @@ class cmd_output:
 # Utility Functions
 ################################################################
 
+
 def yellow(string, light=1):
     """
     Color %string.
@@ -335,6 +335,7 @@ def blue(string, light=1):
         return "\033[94m%s\033[0m" % string
     return "\033[34m%s\033[0m" % string
 
+
 def gray(string, bold=1):
     """
     Color %string.
@@ -349,6 +350,7 @@ def und(string):
     Underline %string.
     """
     return "\033[4m%s\033[0m" % string
+
 
 def nocolor(string, light=1):
     """
@@ -554,12 +556,13 @@ def show_cmd_files(slocs, indices, cmd_arg, options):
             sloc = rem_ansi(slocs[idx])
             lfile, _ = parse_line(sloc)
             fname = sloc[:lfile]
-            if not fname in count:
+            if fname not in count:
                 count[fname] = 0
             count[fname] += 1
 
         for fname in sorted(count):
             pipe.write_row([count[fname], fname])
+
 
 def show_cmd_execute(slocs, indices, cmd_arg, options):
     """
@@ -642,6 +645,7 @@ def show_cmd_grep(slocs, indices, cmd_arg, options):
     dump(grep_slocs)
     slocs[:] = grep_slocs
 
+
 def show_cmd_delete(slocs, indices, cmd_arg, options):
     """
     Delete matches from the list.
@@ -655,6 +659,7 @@ def show_cmd_delete(slocs, indices, cmd_arg, options):
         return error("print command failed: " + str(err))
 
     dump(slocs)
+
 
 def show_cmd_tree(slocs, indices, cmd_arg, options):
     """
@@ -895,6 +900,7 @@ def merge_colors(str_a, str_b):
             ret_str += str_a[:idx]
             str_a, str_b = str_a[idx:], str_b[idx:]
     return ret_str
+
 
 def colorize_code_snippet(filename, snippet_lines, start_of_file):
     """
