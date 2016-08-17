@@ -1,12 +1,12 @@
-# vgrep
+#vgrep
 
 **vgrep** is a tool to search strings in a given source tree.  It is inspired by **cgvg**, but faster by using *git*, and extended to perform further operations on the matches (e.g., opening in an editor, execute other tools, etc.).
 
 Feedback & patches are always welcome.  Feel free to copy, improve, distribute and share.
 
-##Usage Example:
+##Usage Example
 
-###Searching a symbol
+###Searching a Symbol
 
 - **vgrep SYMBOL** to search *SYMBOL* in your current directory.  You can also specify multiple symbols that you may search for.
 
@@ -20,7 +20,7 @@ An example call could look as follows:
 ```
 ![](screenshots/vgrep_matches.png)
 
-####vgrep-specific options:
+###vgrep-Specific Options
 
 - **'--no-git'** to use to *grep* instead (required outside a Git repository).
 
@@ -28,7 +28,7 @@ An example call could look as follows:
 
 - **'--no-header'** to compress the whitespace a bit to help fit more information on each line.  This option is helpful if you are working on a terminal with few columns, or have long filenames or paths to search.
 
-####grep-specific options:
+###grep-Specific Options
 
 - Note that **all** non-vgrep specific options/arguments will be passed to *git grep* or *grep*.  To give a few examples:
 
@@ -38,11 +38,9 @@ An example call could look as follows:
 
 - Please refer to (git) grep manuals for further information.
 
-###Show indexed location
+###Show Indexed Location
 
-To visit a specific location pass **'--show INDEX'**.  vgrep will then open the
-location pointed to by *INDEX* with the editor that is set in your *enviroment*.
-vgrep defaults to *vim* if the *EDITOR* environment variable is not set.
+To visit a specific location pass **'--show INDEX'**.  vgrep will then open the location pointed to by *INDEX* with the editor that is set in your *enviroment*.  vgrep defaults to *vim* if the *EDITOR* environment variable is not set.
 
 ``` bash
 [~/linux/kernel/irq]$ export EDITOR=gedit
@@ -51,9 +49,9 @@ vgrep defaults to *vim* if the *EDITOR* environment variable is not set.
 
 ![](screenshots/vgrep_cmd_show_gedit.png)
 
-##Vgrep Commands
+##vgrep Commands
 
-Once vgreped, you can perform certain operations on the results, such as limiting the range of displayed hits, listing files, etc.  Thanks to [stettberger](https://github.com/stettberger) for adding this functionality to vgrep.
+Once vgreped, you can perform certain operations on the results (via the **'--show'** option) such as limiting the range of displayed hits, listing matched files, etc.  Thanks to [stettberger](https://github.com/stettberger) for adding this functionality to vgrep.
 
 ```
 help: <Selector><Cmd>
@@ -62,7 +60,7 @@ help: <Selector><Cmd>
       E.g.: 40,45s -- show matches 40 and 45 in $EDITOR
 ```
 
-###Showing the directory tree
+###Showing the Directory Tree
 
 The directory tree with a summary of all matches in the respective directory can be shown with **'--show t'**.
 
@@ -70,6 +68,6 @@ The directory tree with a summary of all matches in the respective directory can
 
 ###Showing context lines
 
-Sometimes it is helpful to see the context of matching lines.  Use **'--show c N'** to see *N* context lines.
+Sometimes it is helpful to see the context of matching lines.  Use **'--show c N'** to see *N* context lines.  Note that the displayed source code is highlighted when the **pygments** package is installed (e.g., ```pip3 install pygments```).
 
 ![](screenshots/vgrep_cmd_context.png)
