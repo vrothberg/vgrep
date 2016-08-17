@@ -18,7 +18,7 @@ An example call could look as follows:
 ``` bash
 [~/linux-next/drivers/usb]$ vgrep request
 ```
-![](https://github.com/vrothberg/vgrep/blob/master/screenshots/vgrep_matches.png)
+![](screenshots/vgrep_matches.png)
 
 ####vgrep-specific options:
 
@@ -49,7 +49,7 @@ vgrep defaults to *vim* if the *EDITOR* environment variable is not set.
 [~/linux/kernel/irq]$ vgrep --show 40
 ```
 
-![](https://github.com/vrothberg/vgrep/blob/master/screenshots/vgrep_cmd_show_gedit.png)
+![](screenshots/vgrep_cmd_show_gedit.png)
 
 ##Vgrep Commands
 
@@ -66,10 +66,10 @@ help: <Selector><Cmd>
 
 The directory tree with a summary of all matches in the respective directory can be shown with **'--show t'**.
 
-![](https://github.com/vrothberg/vgrep/blob/master/screenshots/vgrep_cmd_tree.png)
+![](screenshots/vgrep_cmd_tree.png)
 
 ###Showing context lines
 
 Sometimes it is helpful to see the context of matching lines.  Use **'--show c N'** to see *N* context lines.
 
-![](https://github.com/vrothberg/vgrep/blob/master/screenshots/vgrep_cmd_context.png)
+![](screenshots/vgrep_cmd_context.png)
