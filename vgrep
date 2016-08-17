@@ -213,9 +213,9 @@ def dispatch_show_expr(show_expr, slocs, options):
     return options.show_cmds[cmd](slocs, indices, cmd_arg, options)
 
 
-class cmd_output:
+class CmdOutput:
     """
-    The cmd_output class is used to abstract columnized output to console or
+    The CmdOutput class is used to abstract columnized output to console or
     less. This class should be used with a 'with'-expression.
     """
     def __init__(self, options, columns=[]):
@@ -551,7 +551,7 @@ def show_cmd_files(slocs, indices, cmd_arg, options):
     Prints the list of matched files in format "Count File"
     """
     count = {}
-    with cmd_output(options, [("Count", 0, green), ("File", 0, nocolor)]) as pipe:
+    with CmdOutput(options, [("Count", 0, green), ("File", 0, nocolor)]) as pipe:
         for idx in indices:
             sloc = rem_ansi(slocs[idx])
             lfile, _ = parse_line(sloc)
@@ -686,9 +686,9 @@ def show_cmd_tree(slocs, indices, cmd_arg, options):
     col_0 = max([len(str(int(x.real+x.imag))) for x in subtrees.values()])
     col_1 = max([len(str(int(x.imag))) for x in subtrees.values()])
 
-    with cmd_output(options, [("Sum", col_0, yellow),
-                              ("Count", col_1, green),
-                              ("Directory", 0, nocolor)]) as pipe:
+    with CmdOutput(options, [("Sum", col_0, yellow),
+                             ("Count", col_1, green),
+                             ("Directory", 0, nocolor)]) as pipe:
         for dirname, count in sorted(subtrees.items(), key=lambda x: (x[0], len(x[0]))):
             if not dirname:
                 directory = "."
@@ -733,10 +733,10 @@ def print_slocs(slocs, indices, options):
         if (lline-lfile) > max_line:
             max_line = (lline-lfile)
 
-    with cmd_output(options, [("Index", max_indx, yellow),
-                              ("File", max_file, blue, "left"),
-                              ("Line", max_line, green),
-                              ("Content", 0, nocolor)]) as pipe:
+    with CmdOutput(options, [("Index", max_indx, yellow),
+                             ("File", max_file, blue, "left"),
+                             ("Line", max_line, green),
+                             ("Content", 0, nocolor)]) as pipe:
         lfile, lline, lcount = 0, 0, 0
         for i in range(0, len(slocs)):
             # If we have an index set, print only those
@@ -930,7 +930,7 @@ def print_contexts(slocs, indices, context_lines, options):
     Prints context_lines lines before and after the matches given by
     the indices into the slocs array.
     """
-    with cmd_output(options, []) as pipe:
+    with CmdOutput(options, []) as pipe:
         for idx in indices:
             sloc = slocs[idx]
             lfile, lline = parse_line(rem_ansi(sloc))
