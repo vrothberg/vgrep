@@ -66,7 +66,7 @@ help: <Selector><Cmd>
 
 The directory tree with a summary of all matches in the respective directory can be shown with **'--show t'**.
 
-![](https://github.com/vrothberg/vgrep/blob/master/screenshots/vgrep_cmd_show_gedit.png)
+![](https://github.com/vrothberg/vgrep/blob/master/screenshots/vgrep_cmd_tree.png)
 
 ###Showing context lines
 
