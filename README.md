@@ -15,9 +15,11 @@ Feedback & patches are always welcome.  Feel free to copy, improve, distribute a
 - The results are cached, so you can run vgrep without arguments to see the results of the last query.
 
 An example call could look as follows:
-``` bash
+
+``` bash 
 [~/linux-next/drivers/usb]$ vgrep request
 ```
+
 ![](screenshots/vgrep_matches.png)
 
 ###vgrep-Specific Options
@@ -42,7 +44,7 @@ An example call could look as follows:
 
 To visit a specific location pass **'--show INDEX'**.  vgrep will then open the location pointed to by *INDEX* with the editor that is set in your *enviroment*.  vgrep defaults to *vim* if the *EDITOR* environment variable is not set.
 
-``` bash
+```
 [~/linux/kernel/irq]$ export EDITOR=gedit
 [~/linux/kernel/irq]$ vgrep --show 40
 ```
@@ -66,7 +68,7 @@ The directory tree with a summary of all matches in the respective directory can
 
 ![](screenshots/vgrep_cmd_tree.png)
 
-###Showing context lines
+###Showing Context Lines
 
 Sometimes it is helpful to see the context of matching lines.  Use **'--show c N'** to see *N* context lines.  Note that the displayed source code is highlighted when the **pygments** package is installed (e.g., ```pip3 install pygments```).
 
