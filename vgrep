@@ -760,25 +760,39 @@ def print_slocs(slocs, indices, options):
                            bold=(lcount % 2))
 
 
-def execute(cmd):
+def execute(cmd, failOK=False):
     """
     Execute %cmd and return stdout.  Exit in case of error.
     """
     pop = Popen(cmd, stdout=PIPE, stderr=STDOUT, shell=True)
     (stdout, _) = pop.communicate()  # wait until finished
     stdout = stdout.decode(errors='replace')
-    if pop.returncode != 0:
+    if pop.returncode != 0 and failOK is False:
+        print(failOK)
         if stdout != '':
             sys.exit("Command failed: %s\n%s" % (cmd, stdout))
     return stdout
 
 
+def is_git_tree():
+    """
+    Return True if current working directory is inside a git tree.  Else return
+    False.
+    """
+    stdout = execute("git rev-parse --is-inside-work-tree", failOK=True)
+    if stdout == "true":
+        return True
+    return False
+
+
 def grep(grep_args, nogit, nogitsubmodules, files=None):
     """
-    Search symbol in current Git tree and return the output. If %nogit is set
-    grep is called instead of git grep.
+    Search symbol in current Git tree and return the output.
     """
     grep_args = "-In --color=always %s" % grep_args
+
+    if nogit is False:
+        nogit = not is_git_tree()
 
     if nogit is True:
         # overwrite grep colors to only highlight matches
