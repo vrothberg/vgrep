@@ -109,7 +109,15 @@ def main():
         grep_args = " ".join(gitargs)
 
         slocs = grep(grep_args, args.nogit, args.nogitsubmodules)
-        slocs = [x for x in slocs if x]  # filter empty hits
+        slocs = [x for x in slocs if x]
+
+        # Filter 'Permission denied' warnings forward to stderr
+        warn_regex = re.compile(r"^grep: .*: Permission denied")
+        warnings = [x for x in slocs if warn_regex.match(x)]
+        for warn in warnings:
+            print(warn, file=sys.stderr)
+            slocs.remove(warn)
+
         if not slocs:
             # dump and exit if there is not hit
             dump(slocs)
@@ -801,7 +809,7 @@ def grep(grep_args, nogit, nogitsubmodules, files=None):
         else:
             for filename in files:
                 grep_args += " %s" % quote(filename)
-        return execute("%s grep -Z %s" % (colors, grep_args)).rsplit("\n")
+        return execute("%s grep -Z %s" % (colors, grep_args), failOK=True).rsplit("\n")
 
     colors = "-c 'color.grep.match=red bold'"
     git_grep_cmd = "HOME= git %s grep -z %s" % (colors, grep_args)
