@@ -18,11 +18,12 @@ import os
 import sys
 import pickle
 import re
+import shlex
 import signal
+import subprocess as subp
 
 from array import array
 from pipes import quote
-from subprocess import Popen, PIPE, STDOUT
 from itertools import takewhile
 
 try:
@@ -242,7 +243,7 @@ class CmdOutput:
         self.fdc = sys.stdout
         if self.options.noless is False:
             signal.signal(signal.SIGINT, signal.SIG_IGN)
-            self.popen = Popen("less -FRXS", shell=True, stdin=PIPE)
+            self.popen = subp.Popen("less -FRXS", shell=True, stdin=subp.PIPE)
             self.fdc = self.popen.stdin
 
         # Write the aligned header of the output
@@ -502,8 +503,8 @@ def show_cmd_open(slocs, indices, cmd_arg, option):
         if lfile == -1 or lline == -1:
             return error("Please specify a valid index")
         cmd = "%s +%s %s" % (EDITOR, sloc[lfile+1:lline], sloc[:lfile])
-        pop = Popen(cmd, shell=True)
-        pop.wait()
+        out = execute(cmd)
+        print(out.strip("\n"))
 
 
 def show_cmd_print(slocs, indices, cmd_arg, options):
@@ -621,9 +622,8 @@ def show_cmd_execute(slocs, indices, cmd_arg, options):
                                       line=sloc[lfile+1:lline],
                                       match=sloc[lline+1:]))
     cmd = cmd_arg[:start] + "".join(cmd) + cmd_arg[end+1:]
-    pop = Popen(cmd, shell=True)
-    pop.wait()
-
+    out = execute(cmd)
+    print(out.strip("\n"))
 
 def show_cmd_grep(slocs, indices, cmd_arg, options):
     """
@@ -768,16 +768,19 @@ def print_slocs(slocs, indices, options):
                            bold=(lcount % 2))
 
 
-def execute(cmd, failOK=False):
+def execute(cmd, failOK=False, env=None):
     """
     Execute %cmd and return stdout.  Exit in case of error.
     """
-    pop = Popen(cmd, stdout=PIPE, stderr=STDOUT, shell=True)
-    (stdout, _) = pop.communicate()  # wait until finished
-    stdout = stdout.decode(errors='replace')
-    if pop.returncode != 0 and failOK is False:
-        if stdout != '':
-            sys.exit("Command failed: %s\n%s" % (cmd, stdout))
+    stdout = ""
+    cmd = shlex.split(cmd)
+    try:
+        stdout = subp.check_output(cmd, stderr=subp.STDOUT, shell=False, env=env)
+        stdout = stdout.decode(errors='replace')
+    except subp.CalledProcessError as fail:
+        if failOK:
+            return stdout
+        exit(fail)
     return stdout
 
 
@@ -812,8 +815,8 @@ def grep(grep_args, nogit, nogitsubmodules, files=None):
         return execute("%s grep -Z %s" % (colors, grep_args), failOK=True).rsplit("\n")
 
     colors = "-c 'color.grep.match=red bold'"
-    git_grep_cmd = "HOME= git %s grep -z %s" % (colors, grep_args)
-    git_grep_results = execute(git_grep_cmd).rsplit("\n")
+    git_grep_cmd = "git %s grep -z %s" % (colors, grep_args)
+    git_grep_results = execute(git_grep_cmd, env={"HOME" : ""}).rsplit("\n")
 
     # When submodules are ignored, we can return here.
     if nogitsubmodules is True:
