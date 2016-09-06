@@ -816,7 +816,7 @@ def grep(grep_args, nogit, nogitsubmodules, files=None):
 
     colors = "-c 'color.grep.match=red bold'"
     git_grep_cmd = "git %s grep -z %s" % (colors, grep_args)
-    git_grep_results = execute(git_grep_cmd, env={"HOME" : ""}).rsplit("\n")
+    git_grep_results = execute(git_grep_cmd, env={"HOME" : ""}, failOK=True).rsplit("\n")
 
     # When submodules are ignored, we can return here.
     if nogitsubmodules is True:
@@ -837,7 +837,7 @@ def grep(grep_args, nogit, nogitsubmodules, files=None):
 
         # Start grep within the submodule
         sub_grep_cmd = "cd %s && %s" % (quote(submodule), git_grep_cmd)
-        lines = execute(sub_grep_cmd).rsplit("\n")
+        lines = execute(sub_grep_cmd, failOK=True).rsplit("\n")
         # Prepend the relative submodule path to each line
         for line in [x for x in lines if x]:
             git_grep_results.append(os.path.join(submodule, line))
