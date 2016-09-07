@@ -503,8 +503,8 @@ def show_cmd_open(slocs, indices, cmd_arg, option):
         if lfile == -1 or lline == -1:
             return error("Please specify a valid index")
         cmd = "%s +%s %s" % (EDITOR, sloc[lfile+1:lline], sloc[:lfile])
-        out = execute(cmd)
-        print(out.strip("\n"))
+        pop = subp.Popen(cmd, shell=True)
+        pop.wait()
 
 
 def show_cmd_print(slocs, indices, cmd_arg, options):
@@ -622,8 +622,9 @@ def show_cmd_execute(slocs, indices, cmd_arg, options):
                                       line=sloc[lfile+1:lline],
                                       match=sloc[lline+1:]))
     cmd = cmd_arg[:start] + "".join(cmd) + cmd_arg[end+1:]
-    out = execute(cmd)
-    print(out.strip("\n"))
+    pop = subp.Popen(cmd, shell=True)
+    pop.wait()
+
 
 def show_cmd_grep(slocs, indices, cmd_arg, options):
     """
