@@ -1,6 +1,6 @@
 #vgrep
 
-**vgrep** is a tool to search strings in a given source tree.  It is inspired by **cgvg**, but faster by using *git*, and extended to perform further operations on the matches (e.g., opening in an editor, execute other tools, etc.).
+**vgrep** is a tool to search strings in a given source tree.  It is inspired by **cgvg**, but faster by using *git*, and extended to perform further operations on the matches (e.g., opening in an editor, listing matched files, etc.).
 
 Feedback & patches are always welcome.  Feel free to copy, improve, distribute and share.
 
@@ -16,7 +16,7 @@ Feedback & patches are always welcome.  Feel free to copy, improve, distribute a
 
 An example call could look as follows:
 
-``` bash 
+``` bash
 [~/linux-next/drivers/usb]$ vgrep request
 ```
 
@@ -58,7 +58,7 @@ Once vgreped, you can perform certain operations on the results (via the **'--sh
 ```
 help: <Selector><Cmd>
       Selector:  `3' (one) `5,23' (mult.) `7-10' (range) `/ker.el/' (regex)
-      Cmd:  print, show, context, tree, delete, files, execute, quit,
+      Cmd:  print, show, context, tree, delete, files, quit,
       E.g.: 40,45s -- show matches 40 and 45 in $EDITOR
 ```
 
