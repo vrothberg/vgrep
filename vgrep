@@ -752,13 +752,13 @@ def grep(grep_args, nogit, nogitsubmodules, files=None):
 
     if nogit is True:
         # overwrite grep colors to only highlight matches
-        colors = "GREP_COLORS='ms=01;31:mc=:sl=:cx=:fn=:ln=:bn=:se='"
+        colors = {"GREP_COLORS": 'ms=01;31:mc=:sl=:cx=:fn=:ln=:bn=:se='}
         if files is None:
             grep_args += " -r ."
         else:
             for filename in files:
                 grep_args += " %s" % quote(filename)
-        return execute("%s grep -Z %s" % (colors, grep_args), failOK=True).rsplit("\n")
+        return execute("grep -Z %s" % (grep_args), failOK=True, env=colors).rsplit("\n")
 
     colors = "-c 'color.grep.match=red bold'"
     git_grep_cmd = "git %s grep -z %s" % (colors, grep_args)
