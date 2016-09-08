@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-This module is a reimpementation of the ancient cgvg perl scripts.
+This module is a reimplementation of the ancient cgvg perl scripts.
 
 Visit https://github.com/vrothberg/vgrep for more information.
 """
@@ -124,7 +124,7 @@ def main():
             dump(slocs)
             sys.exit(0)
 
-        # test ouput format of grep
+        # test output format of grep
         test = rem_ansi(slocs[0])
         if not re.match(r"^[^:\0]+[:\0]\d+[\0:-].*$", test):
             sys.stderr.write("Wrong format from (git) grep: '%s'\n" % test)
@@ -536,7 +536,7 @@ def show_cmd_print_and_save(slocs, indices, cmd_arg, options):
 
 def show_cmd_context(slocs, indices, cmd_arg, options):
     """
-    For every match, this command gives the context of the match within the
+    For each match, this command gives the context of the match within the
     matched file.  The cmd_arg gives the number of context lines. Default is 10
     lines of context.
 
@@ -618,7 +618,7 @@ def show_cmd_delete(slocs, indices, cmd_arg, options):
 def show_cmd_tree(slocs, indices, cmd_arg, options):
     """
     Show a directory tree narrowed down to all matches files. The tree
-    is annoated with match counts and accumulated match counts.
+    is annotated with match counts and accumulated match counts.
     """
     try:
         depth = int(cmd_arg)
@@ -664,7 +664,7 @@ def show_cmd_tree(slocs, indices, cmd_arg, options):
 
 def print_slocs(slocs, indices, options):
     """
-    Print SLOCS on terminal.
+    Print slocs on terminal.
     """
     max_indx = len(str(len(slocs)))
     max_file = 0
@@ -762,7 +762,7 @@ def grep(grep_args, nogit, nogitsubmodules, files=None):
 
     colors = "-c 'color.grep.match=red bold'"
     git_grep_cmd = "git %s grep -z %s" % (colors, grep_args)
-    git_grep_results = execute(git_grep_cmd, env={"HOME" : ""}, failOK=True).rsplit("\n")
+    git_grep_results = execute(git_grep_cmd, env={"HOME": ""}, failOK=True).rsplit("\n")
 
     # When submodules are ignored, we can return here.
     if nogitsubmodules is True:
@@ -832,8 +832,8 @@ def load():
 
 def merge_colors(str_a, str_b):
     """
-    Merge the color codes from two strings. If the two strings are not mergable,
-    return the first string.
+    Merge the color codes from two strings. If the two strings are not
+    mergeable, return the first string.
 
     This function searches the earliest 0x1b in both strings, and appends the
     common prefix to the returning string.
@@ -842,7 +842,7 @@ def merge_colors(str_a, str_b):
     b = "abc         x{yellow}yz"
            ^- Snip here first.
 
-    The preceeding color codes are appended to the return string.  And the
+    The preceding color codes are appended to the return string.  And the
     process is repeated until both strings are consumed.
 
     ret_str = "abc{blue}b{yellow}yz"
