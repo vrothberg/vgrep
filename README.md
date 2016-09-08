@@ -45,8 +45,8 @@ An example call could look as follows:
 To visit a specific location pass **'--show INDEX'**.  vgrep will then open the location pointed to by *INDEX* with the editor that is set in your *enviroment*.  vgrep defaults to *vim* if the *EDITOR* environment variable is not set.
 
 ```
-[~/linux/kernel/irq]$ export EDITOR=gedit
-[~/linux/kernel/irq]$ vgrep --show 40
+[~/linux/drivers/usb]$ export EDITOR=gedit
+[~/linux/drivers/usb]$ vgrep --show 40
 ```
 
 ![](screenshots/vgrep_cmd_show_gedit.png)
