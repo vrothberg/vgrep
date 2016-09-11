@@ -714,14 +714,14 @@ def print_slocs(slocs, indices, options):
                            bold=(lcount % 2))
 
 
-def execute(cmd, failOK=False, env=None):
+def execute(cmd, failOK=False, env=None, cwd=None):
     """
     Execute %cmd and return stdout.  Exit in case of error.
     """
     stdout = ""
     cmd = shlex.split(cmd)
     try:
-        stdout = subp.check_output(cmd, stderr=subp.STDOUT, shell=False, env=env)
+        stdout = subp.check_output(cmd, stderr=subp.STDOUT, env=env, cwd=cwd)
         stdout = stdout.decode(errors='replace')
     except subp.CalledProcessError as fail:
         if failOK:
@@ -782,8 +782,7 @@ def grep(grep_args, nogit, nogitsubmodules, files=None):
         submodule = os.path.relpath(submodule, cwd)
 
         # Start grep within the submodule
-        sub_grep_cmd = "cd %s && %s" % (quote(submodule), git_grep_cmd)
-        lines = execute(sub_grep_cmd, failOK=True).rsplit("\n")
+        lines = execute(git_grep_cmd, failOK=True, cwd=submodule).rsplit("\n")
         # Prepend the relative submodule path to each line
         for line in [x for x in lines if x]:
             git_grep_results.append(os.path.join(submodule, line))
