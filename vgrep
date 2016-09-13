@@ -160,8 +160,11 @@ def main():
                 show_expr = ask_show_expr(show_help)
             except EOFError:
                 break
-            show_help = False
-            dispatch_show_expr(show_expr, slocs, args)
+            if show_expr != "?":
+                show_help = False
+                dispatch_show_expr(show_expr, slocs, args)
+            else:
+                show_help = True;
     elif args.show:
         ret = dispatch_show_expr(args.show, slocs, args)
 
