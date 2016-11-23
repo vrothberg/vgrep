@@ -191,7 +191,8 @@ def ask_show_expr(verbose=False):
               yellow("t") + "ree,",
               yellow("d") + "elete,",
               yellow("f") + "iles,",
-              yellow("q") + "uit,")
+              yellow("q") + "uit,",
+              yellow("?"))
         print('      E.g.: 40,45s -- show matches 40 and 45 in $EDITOR')
 
     return input(green("What do you want to see?> "))
