@@ -75,8 +75,17 @@ Sometimes it is helpful to see the context of matching lines.  Use **'--show c N
 For instance, to see all matches with 3 context lines, use the command:
 [~/linux/drivers/usb]$ vgrep request --show c3
 
-To print 3 context lines for matches 10 to 13 of request, use :
+To see matches 2 and 10 with 3 context lines, use the command:
+[~/linux/drivers/usb]$ vgrep request --show 2,10c3
+
+To print 3 context lines for matches 10 to 13 of request, use:
 [~/linux/drivers/usb]$ vgrep request --show 10-13c3
 
 ![](screenshots/vgrep_cmd_context.png)
 
+###Showing while excluding specific lines
+
+If you do not want to see some lines for your search, use the option **'--show Nd'** to exclude *N* matches.
+
+The following command will not show the 9 first matches:
+[~/linux/drivers/usb]$ vgrep request --show 0-9d
