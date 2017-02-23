@@ -72,4 +72,11 @@ The directory tree with a summary of all matches in the respective directory can
 
 Sometimes it is helpful to see the context of matching lines.  Use **'--show c N'** to see *N* context lines.  Note that the displayed source code is highlighted when the **pygments** package is installed (e.g., ```pip3 install pygments```).
 
+For instance, to see all matches with 3 context lines, use the command:
+[~/linux/drivers/usb]$ vgrep request --show c3
+
+To print 3 context lines for matches 10 to 13 of request, use :
+[~/linux/drivers/usb]$ vgrep request --show 10-13c3
+
 ![](screenshots/vgrep_cmd_context.png)
+
