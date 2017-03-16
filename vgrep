@@ -6,12 +6,9 @@ This module is a reimplementation of the ancient cgvg perl scripts.
 Visit https://github.com/vrothberg/vgrep for more information.
 """
 
-# (c) 2015-2016 Valentin Rothberg <valentinrothberg@gmail.com>
+# (c) 2015-2017 Valentin Rothberg <valentinrothberg@gmail.com>
 #
 # Licensed under the terms of the GNU GPL License version 3
-
-# Ignore some annoying pylint warnings
-# pylint: disable=W0613
 
 import argparse
 import os
@@ -27,6 +24,7 @@ from pipes import quote
 from itertools import takewhile
 
 try:
+    # pylint: disable=unused-import
     import readline
 except ImportError:
     pass
@@ -100,6 +98,10 @@ def main():
     """
     Main routine of this module.
     """
+    # pylint: disable=too-many-branches
+    # pylint: disable=too-many-statements
+    # pylint: disable=global-statement
+
     args, gitargs = parse_options()
     if args.nohighlight:
         global PYGMENTS_AVAILABLE
@@ -164,7 +166,7 @@ def main():
                 show_help = False
                 dispatch_show_expr(show_expr, slocs, args)
             else:
-                show_help = True;
+                show_help = True
     elif args.show:
         ret = dispatch_show_expr(args.show, slocs, args)
 
@@ -229,7 +231,9 @@ class CmdOutput:
     The CmdOutput class is used to abstract columnized output to console or
     less. This class should be used with a 'with'-expression.
     """
-    def __init__(self, options, columns=[]):
+    def __init__(self, options, columns=None):
+        if columns is None:
+            columns = []
         self.options = options
         self.columns = columns
         self.format_str_light = u""
@@ -367,6 +371,8 @@ def nocolor(string, light=1):
     """
     Does not apply any color to the string
     """
+    # pylint: disable=unused-argument
+
     return string
 
 
@@ -403,6 +409,8 @@ def parse_show(show, slocs):
     into the slocs array, the show command, and the command arguments as a
     string.
     """
+    # pylint: disable=too-many-branches
+
     match = re.match("^([0-9, :-]*|/[^/]*/)([ghqspPfcxtd].*)?$", show)
     assert match, "invalid show expression: " + show
     if match.groups()[1] is None:
@@ -452,6 +460,8 @@ def show_cmd_quit(slocs, indices, cmd_arg, option):
     """
     Quits the interactive mode.
     """
+    # pylint: disable=unused-argument
+
     sys.exit(0)
 
 
@@ -468,6 +478,8 @@ def show_cmd_help(slocs, indices, cmd_arg, options):
         h p       -- help for the print command
         h execute -- the execute command
     """
+    # pylint: disable=unused-argument
+
     # Replace {commands} by the command list
     if "{commands}" in show_cmd_help.__doc__:
         commands = []
@@ -495,6 +507,8 @@ def show_cmd_open(slocs, indices, cmd_arg, option):
     This command opens the program, given by the $EDITOR environment variable,
     for every selected match at the given line.
     """
+    # pylint: disable=unused-argument
+
     if len(indices) > 3:
         inp = input("Matched %s lines: visit all of them? (N/y) " % len(indices))
         if not ("y" in inp or 'Y' in inp):
@@ -513,6 +527,8 @@ def show_cmd_print(slocs, indices, cmd_arg, options):
     """
     Prints all matched lines.
     """
+    # pylint: disable=unused-argument
+
     try:
         print_slocs(slocs, set(indices), options)
     except IOError as err:
@@ -524,6 +540,8 @@ def show_cmd_print_and_save(slocs, indices, cmd_arg, options):
     Replaces the match cache by the given selection. The selected matches are
     renumbered and the new match cache is printed.
     """
+    # pylint: disable=unused-argument
+
     match_slocs = []
     for idx in indices:
         match_slocs.append(slocs[idx])
@@ -561,6 +579,8 @@ def show_cmd_files(slocs, indices, cmd_arg, options):
     """
     Prints the list of matched files in format "Count File"
     """
+    # pylint: disable=unused-argument
+
     count = {}
     with CmdOutput(options, [("Count", 0, green), ("File", 0, nocolor)]) as pipe:
         for idx in indices:
@@ -608,6 +628,8 @@ def show_cmd_delete(slocs, indices, cmd_arg, options):
     """
     Delete matches from the list.
     """
+    # pylint: disable=unused-argument
+
     for idx in reversed(sorted(indices)):
         del slocs[idx]
 
@@ -624,6 +646,8 @@ def show_cmd_tree(slocs, indices, cmd_arg, options):
     Show a directory tree narrowed down to all matches files. The tree
     is annotated with match counts and accumulated match counts.
     """
+    # pylint: disable=too-many-locals
+
     try:
         depth = int(cmd_arg)
     except ValueError:
@@ -718,7 +742,7 @@ def print_slocs(slocs, indices, options):
                            bold=(lcount % 2))
 
 
-def execute(cmd, failOK=False, env=None, cwd=None):
+def execute(cmd, failok=False, env=None, cwd=None):
     """
     Execute %cmd and return stdout.  Exit in case of error.
     """
@@ -728,7 +752,7 @@ def execute(cmd, failOK=False, env=None, cwd=None):
         stdout = subp.check_output(cmd, stderr=subp.STDOUT, env=env, cwd=cwd)
         stdout = stdout.decode(errors='replace')
     except subp.CalledProcessError as fail:
-        if failOK:
+        if failok:
             return stdout
         exit(fail)
     return stdout
@@ -739,7 +763,7 @@ def is_git_tree():
     Return True if current working directory is inside a git tree.  Else return
     False.
     """
-    stdout = execute("git rev-parse --is-inside-work-tree", failOK=True)
+    stdout = execute("git rev-parse --is-inside-work-tree", failok=True)
     if stdout.strip() == "true":
         return True
     return False
@@ -756,17 +780,17 @@ def grep(grep_args, nogit, nogitsubmodules, files=None):
 
     if nogit is True:
         # overwrite grep colors to only highlight matches
-        colors = {"GREP_COLORS": 'ms=01;31:mc=:sl=:cx=:fn=:ln=:bn=:se='}
+        colenv = {"GREP_COLORS": 'ms=01;31:mc=:sl=:cx=:fn=:ln=:bn=:se='}
         if files is None:
             grep_args += " -r ."
         else:
             for filename in files:
                 grep_args += " %s" % quote(filename)
-        return execute("grep -Z %s" % (grep_args), failOK=True, env=colors).rsplit("\n")
+        return execute("grep -Z %s" % (grep_args), failok=True, env=colenv).rsplit("\n")
 
     colors = "-c 'color.grep.match=red bold'"
     git_grep_cmd = "git %s grep -z %s" % (colors, grep_args)
-    git_grep_results = execute(git_grep_cmd, env={"HOME": ""}, failOK=True).rsplit("\n")
+    git_grep_results = execute(git_grep_cmd, env={"HOME": ""}, failok=True).rsplit("\n")
 
     # When submodules are ignored, we can return here.
     if nogitsubmodules is True:
@@ -786,7 +810,7 @@ def grep(grep_args, nogit, nogitsubmodules, files=None):
         submodule = os.path.relpath(submodule, cwd)
 
         # Start grep within the submodule
-        lines = execute(git_grep_cmd, failOK=True, cwd=submodule).rsplit("\n")
+        lines = execute(git_grep_cmd, failok=True, cwd=submodule).rsplit("\n")
         # Prepend the relative submodule path to each line
         for line in [x for x in lines if x]:
             git_grep_results.append(os.path.join(submodule, line))
@@ -801,6 +825,8 @@ def dump(data):
     """
     Fork and dump %data to the local cache.
     """
+    # pylint: disable=global-statement
+
     global OLD_CHILD
     if OLD_CHILD:
         os.kill(OLD_CHILD, 15)
@@ -880,6 +906,8 @@ def colorize_code_snippet(filename, snippet_lines, start_of_file):
     Colorizes the code snippet (snippet_lines) with pygments and uses the
     filename and first N bytes (start_of_file) to identify the file type.
     """
+    # pylint: disable=bare-except
+
     try:
         lexer = guess_lexer_for_filename(filename, start_of_file)
     except:
@@ -903,6 +931,8 @@ def print_contexts(slocs, indices, context_lines, options):
     Prints context_lines lines before and after the matches given by
     the indices into the slocs array.
     """
+    # pylint: disable=too-many-locals
+
     with CmdOutput(options, []) as pipe:
         for idx in indices:
             sloc = slocs[idx]
@@ -928,11 +958,12 @@ def print_contexts(slocs, indices, context_lines, options):
                                          blue(filename, True),
                                          green("(%s-%s)" % (start+1, end+1)))
                 pipe.write("%s %s\n" % (delim, yellow("-" * (79-len(rem_ansi(delim))))))
-                output_lines = [x.rstrip("\n") for x in lines[start:end+1]]
+
+                output = [x.rstrip("\n") for x in lines[start:end+1]]
 
                 # Colorize context lines with pygments if available and desired
                 if PYGMENTS_AVAILABLE:
-                    line_count = len(output_lines)
+                    line_count = len(output)
                     start_of_file = "".join(lines[:min(30, len(lines))])
                     added_before = 0
                     added_after = 0
@@ -941,26 +972,26 @@ def print_contexts(slocs, indices, context_lines, options):
                         if added_before > 30 or (start-added_before-1) < 0:
                             break
                         added_before += 1
-                        output_lines = [lines[start - added_before].rstrip("\n")] + output_lines
-                        if output_lines[0] == '':
+                        output = [lines[start - added_before].rstrip("\n")] + output
+                        if output[0] == '':
                             break
 
                     while True:
                         if added_after > 30 or (end+added_after+1) >= len(lines):
                             break
                         added_after += 1
-                        output_lines += [lines[end+added_after].rstrip("\n")]
-                        if output_lines[-1] == '':
+                        output += [lines[end+added_after].rstrip("\n")]
+                        if output[-1] == '':
                             break
 
-                    output_lines = colorize_code_snippet(filename, output_lines, start_of_file)
-                    output_lines = output_lines[added_before:added_before+line_count]
-                    output_lines[match_line-start] = merge_colors(output_lines[match_line-start], match_content)
+                    output = colorize_code_snippet(filename, output, start_of_file)
+                    output = output[added_before:added_before+line_count]
+                    output[match_line-start] = merge_colors(output[match_line-start], match_content)
                 else:
-                    output_lines[match_line-start] = match_content
+                    output[match_line-start] = match_content
 
                 # Output lines for this context snippet
-                for line_nr, text in enumerate(output_lines, start+1):
+                for line_nr, text in enumerate(output, start+1):
                     pipe.write_row([line_nr, text], bold=(line_nr == (match_line+1)))
 
 
