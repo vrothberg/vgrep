@@ -83,14 +83,14 @@ To print 3 context lines for matches 10 to 13 of request, use:
 
 ![](screenshots/vgrep_cmd_context.png)
 
-###Showing Specific Lines
+### Showing Specific Lines
 
 If you want to print only some of you results, use the option **'--show Np'** to print *N* matches.
 
 For instance, to print matches 0 to 9, use:
 [~/linux/drivers/usb]$ vgrep request --show 0-9p
 
-###Excluding Specific Lines
+### Excluding Specific Lines
 
 If you do not want to see some lines for your search, use the option **'--show Nd'** to exclude *N* matches.
 
