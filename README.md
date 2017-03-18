@@ -72,27 +72,16 @@ The directory tree with a summary of all matches in the respective directory can
 
 Sometimes it is helpful to see the context of matching lines.  Use **'--show c N'** to see *N* context lines.  Note that the displayed source code is highlighted when the **pygments** package is installed (e.g., ```pip3 install pygments```).
 
-For instance, to see all matches with 3 context lines, use the command:
-[~/linux/drivers/usb]$ vgrep request --show c3
-
-To see matches 2 and 10 with 3 context lines, use the command:
-[~/linux/drivers/usb]$ vgrep request --show 2,10c3
-
-To print 3 context lines for matches 10 to 13 of request, use:
-[~/linux/drivers/usb]$ vgrep request --show 10-13c3
+* To see all matches with 3 context lines, use **'--show c3'**
+* To see matches 2 and 10 with 3 context lines, use **'--show 2,10c3'**
+* To print 3 context lines for matches 10 to 13 of request, use **'--show 10-13c3'**
 
 ![](screenshots/vgrep_cmd_context.png)
 
 ### Showing Specific Lines
 
-If you want to print only some of you results, use the option **'--show Np'** to print *N* matches.
-
-For instance, to print matches 0 to 9, use:
-[~/linux/drivers/usb]$ vgrep request --show 0-9p
+If you want to print only some of the results, use the option **'--show Np'** to print *N* matches. For instance, to print matches 0 to 9, use **'--show 0-9p'**
 
 ### Excluding Specific Lines
 
-If you do not want to see some lines for your search, use the option **'--show Nd'** to exclude *N* matches.
-
-The following command will not show the 9 first matches:
-[~/linux/drivers/usb]$ vgrep request --show 0-9d
+If you do not want to see some lines for your search, use the option **'--show Nd'** to exclude *N* matches.  The following command will not show the 9 first matches: ```vgrep request --show 0-9d```
