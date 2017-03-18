@@ -62,11 +62,13 @@ help: <Selector><Cmd>
       E.g.: 40,45s -- show matches 40 and 45 in $EDITOR
 ```
 
-### Showing the Directory Tree
+### Showing Specific Lines
 
-The directory tree with a summary of all matches in the respective directory can be shown with **'--show t'**.
+If you want to print only some of the results, use the option **'--show Np'** to print *N* matches. For instance, to print matches 0 to 9, use **'--show 0-9p'**
 
-![](screenshots/vgrep_cmd_tree.png)
+### Excluding Specific Lines
+
+If you do not want to see some lines for your search, use the option **'--show Nd'** to exclude *N* matches.  The following command will not show the 9 first matches: ```vgrep request --show 0-9d```
 
 ### Showing Context Lines
 
@@ -78,10 +80,8 @@ Sometimes it is helpful to see the context of matching lines.  Use **'--show c N
 
 ![](screenshots/vgrep_cmd_context.png)
 
-### Showing Specific Lines
+### Showing the Directory Tree
 
-If you want to print only some of the results, use the option **'--show Np'** to print *N* matches. For instance, to print matches 0 to 9, use **'--show 0-9p'**
+The directory tree with a summary of all matches in the respective directory can be shown with **'--show t'**.
 
-### Excluding Specific Lines
-
-If you do not want to see some lines for your search, use the option **'--show Nd'** to exclude *N* matches.  The following command will not show the 9 first matches: ```vgrep request --show 0-9d```
+![](screenshots/vgrep_cmd_tree.png)
