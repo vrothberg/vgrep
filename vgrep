@@ -782,7 +782,7 @@ def grep(grep_args, nogit, nogitsubmodules, files=None):
         # overwrite grep colors to only highlight matches
         colenv = {"GREP_COLORS": 'ms=01;31:mc=:sl=:cx=:fn=:ln=:bn=:se='}
         if files is None:
-            grep_args += " -r ."
+            grep_args += " -R ."
         else:
             for filename in files:
                 grep_args += " %s" % quote(filename)
