@@ -747,15 +747,16 @@ def execute(cmd, failok=False, env=None, cwd=None):
     Execute %cmd and return stdout.  Exit in case of error.
     """
     stdout = ""
-    cmd = shlex.split(cmd)
-    try:
-        stdout = subp.check_output(cmd, stderr=subp.STDOUT, env=env, cwd=cwd)
-        stdout = stdout.decode(errors='replace')
-    except subp.CalledProcessError as fail:
-        if failok:
-            return stdout
-        exit(fail)
-    return stdout
+    args = shlex.split(cmd)
+
+    process = subp.Popen(args, stderr=subp.STDOUT, stdout=subp.PIPE, env=env, cwd=cwd)
+    output, _ = process.communicate()
+    retcode = process.poll()
+
+    if retcode and not failok:
+        exit("Command '%s' returned with %d" % (cmd, retcode))
+
+    return output.decode(errors='replace')
 
 
 def is_git_tree():
