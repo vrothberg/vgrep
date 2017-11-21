@@ -25,13 +25,13 @@ import (
 
 // cliArgs passed to go-flags
 type cliArgs struct {
-	Debug       bool   `short:"d" long:"debug" description:"verbose debug logging"`
-	Interactive bool   `short:"i" long:"interactive" description:"enter interactive shell"`
-	NoGit       bool   `long:"no-git" description:"use grep instead of git-grep"`
-	NoHeader    bool   `long:"no-header" description:"do not print pretty headers"`
-	NoLess      bool   `long:"no-less" description:"use stdout instead of less"`
-	Show        string `short:"s" long:"show" description:"show specified matches or open shell" value-name:"SELECTORS"`
-	Version     bool   `short:"v" long:"version" description:"print version number"`
+	Debug       bool   `short:"d" long:"debug" description:"Verbose debug logging"`
+	Interactive bool   `short:"i" long:"interactive" description:"Enter interactive shell"`
+	NoGit       bool   `long:"no-git" description:"Use grep instead of git-grep"`
+	NoHeader    bool   `long:"no-header" description:"Do not print pretty headers"`
+	NoLess      bool   `long:"no-less" description:"Use stdout instead of less"`
+	Show        string `short:"s" long:"show" description:"Show specified matches or open shell" value-name:"SELECTORS"`
+	Version     bool   `short:"v" long:"version" description:"Print version number"`
 }
 
 // global variables
