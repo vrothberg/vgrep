@@ -587,10 +587,10 @@ func commandShow(index int) bool {
 
 	editor := getEditor()
 	file := Matches[index][1]
-	lflag := getEditorLineFlag() + strconv.Itoa(index)
+	lFlag := getEditorLineFlag() + Matches[index][2]
 
-	Log.Debugf("opening index %d via: %s %s %s", index, editor, file, lflag)
-	cmd := exec.Command(editor, file, lflag)
+	Log.Debugf("opening index %d via: %s %s %s", index, editor, file, lFlag)
+	cmd := exec.Command(editor, file, lFlag)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
