@@ -30,7 +30,8 @@ type cliArgs struct {
 	NoGit       bool   `long:"no-git" description:"use grep instead of git-grep"`
 	NoHeader    bool   `long:"no-header" description:"do not print pretty headers"`
 	NoLess      bool   `long:"no-less" description:"use stdout instead of less"`
-	Show        string `short:"s" long:"show" description:"Show specified matches or open shell" value-name:"SELECTORS"`
+	Show        string `short:"s" long:"show" description:"show specified matches or open shell" value-name:"SELECTORS"`
+	Version     bool   `short:"v" long:"version" description:"print version number"`
 }
 
 // global variables
@@ -38,6 +39,7 @@ var (
 	Options cliArgs
 	Matches [][]string
 	Log     = logrus.New()
+	version string // set in the Makefile
 )
 
 func main() {
@@ -49,6 +51,11 @@ func main() {
 	args, err := parser.ParseArgs(os.Args[1:])
 	if err != nil {
 		os.Exit(1)
+	}
+
+	if Options.Version {
+		fmt.Println(version)
+		os.Exit(0)
 	}
 
 	if Options.Debug {

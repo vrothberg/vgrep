@@ -1,15 +1,23 @@
+SHELL= /bin/bash
 GO ?= go
 BUILD_DIR := ./build
 BIN_DIR := /usr/local/bin
 NAME := vgrep
 PROJECT := github.com/vrothberg/vgrep
+VERSION := $(shell cat ./VERSION)
+COMMIT := $(shell git rev-parse HEAD 2> /dev/null || true)
 
 GO_SRC=$(shell find . -name \*.go)
 
 all: check build
 
+.PHONY: build
 build: $(GO_SRC)
-	 $(GO) build -o $(BUILD_DIR)/$(NAME)
+	 $(GO) build -o $(BUILD_DIR)/$(NAME) -ldflags "-s -w -X main.version=${VERSION}-$(COMMIT)-dev"
+
+.PHONY: release
+release: check
+	 $(GO) build -o $(BUILD_DIR)/$(NAME) -ldflags "-s -w -X main.version=${VERSION}"
 
 .PHONY: clean
 clean:
@@ -38,7 +46,7 @@ buildInContainer: buildImage
 	docker run --rm -v `pwd`:/go/src/$(PROJECT) $(IMAGENAME)
 
 .PHONY: install
-install: deps build
+install:
 	sudo install -D -m755 $(BUILD_DIR)/$(NAME) $(BIN_DIR)
 
 .PHONY: uninstall
