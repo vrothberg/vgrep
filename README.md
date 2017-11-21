@@ -1,87 +1,73 @@
 # vgrep
 
-**vgrep** is a tool to search strings in a given source tree.  It is inspired by **cgvg**, but faster by using *git*, and extended to perform further operations on the matches (e.g., opening in an editor, listing matched files, etc.).
+**vgrep** is a command-line tool to search textual patterns in directories. It serves as a frontend to grep and git-grep and allows to open the indexed matching lines in a user-specified editor.  vgrep is inspired by the ancient **cgvg** scripts but extended to perform further operations such as listing statistics of files and directory trees or showing the context lines before and after the matches.
 
-Feedback & patches are always welcome.  Feel free to copy, improve, distribute and share.
+Please, feel free to copy, improve, distribute and share.  Feedback and patches are always welcome!
 
-## Usage Example
+Notice for packaging: To ease packaging, vgrep ships all external dependencies in the `vendor/` directory. If you have no prior experience in building packages in golang, feel free to checkout and use the `buildInContainer` make target (requires docker).
 
-### Searching a Symbol
+## NEWS - vgrep has moved to golang (no official release yet)
+The old vgrep implementation in Python can be found in the "python" branch for historical reasons. The main changes include:
 
-- **vgrep SYMBOL** to search *SYMBOL* in your current directory.  You can also specify multiple symbols that you may search for.
+ - The `--no-git-submodules` flag has been removed as git-grep supports recursing into submodules (see ``--recurse-submodules``) since git v2.12.
+ - The code highlighting of context lines (`--show c`) has been dropped as pygments doesn't perform well with some widely used color schemes, such as solarized.  Code highlighting may be re-added in a future release.
+ - The grammar to execute vgrep commands has changed from ``[selectors] command`` to ``command[context] [selectors]``.  This change was necessary to discriminate context lines from selectors, what did not work properly before.  Extending the selectors also doesn't require to delete the entire line anymore.
+ - Regex selectors were broken and have been removed for now.  As vgrep pipes its output to `less`, there are various alternatives to further search in and navigate through the output.
+ - The versioning scheme changed from the Ubuntu-like versioning of ``month.year-patch`` to semantic versioning of ``major.minor.patch``.  Please refer to http://semver.org/ to read about the benefits of this versioning scheme.
 
-- The output has the format "**Index** **File** **Line** **Content**".  The index can later be used to open the specific location in an editor.  Matches are highlighted in the content lines.
+There are two main reasons for having ported vgrep from Python to golang.  First, although the previous code base was Python on steroids, the language has certain performance penalties that became a bottleneck when operating on large amounts of data; the implementation in golang is several factors faster and easier to maintain. Second, althouth there are valid arguments to use even more performant programming languages than golang, such as C, C++ or Rust, but C and C++ are hard to maintain dinosaurs and I simply prefer golang over Rust.
 
-- The results are cached, so you can run vgrep without arguments to see the results of the last query.
+Please open an issue in case you experience any troubles after upgrading to the golang version.
 
-An example call could look as follows:
+# Searching patterns
+The basic functionality of vgrep is to perform textual searches. On a technical level, vgrep serves as a frontend to grep or git-grep when invoking vgrep inside a git tree.  All non-vgrep flags and arguments will be passed along to either grep or git-grep.  The command `$vgrep -w foo`, for instance, will only print matching lines where `foo` forms a whole word as the `-w` flag will be passed to grep or git-grep. Notice, that the matching lines of the last querry are cached, so running vgrep without a new query will load previous results and operate on them.
 
-``` bash
-[~/linux-next/drivers/usb]$ vgrep request
-```
+An example call may look as follows:
 
-![](screenshots/vgrep_matches.png)
+![](screenshots/vgrep-simple-search.png)
 
-### vgrep-Specific Options
+By default, the output will be written to `less` to make browsing large amounts of data more comfortable.
 
-- **'--no-git'** to use to *grep* instead (required outside a Git repository).
-
-- **'--no-git-submodules'** to not recurse into Git submodules.  Git submodule search is only useful within a Git Repository (see --no-git).
-
-- **'--no-header'** to compress the whitespace a bit to help fit more information on each line.  This option is helpful if you are working on a terminal with few columns, or have long filenames or paths to search.
-
-### grep-Specific Options
-
-- Note that **all** non-vgrep specific options/arguments will be passed to *git grep* or *grep*.  To give a few examples:
-
-- **vgrep -w FOO** will match *FOO* only at word boundaries.  Since vgrep has no option *-w* it will be passed to (git) grep respectively.
-
-- **vgrep FOO -- "*.c"** to grep only in .c files.
-
-- Please refer to (git) grep manuals for further information.
-
-### Show Indexed Location
-
-To visit a specific location pass **'--show INDEX'**.  vgrep will then open the location pointed to by *INDEX* with the editor that is set in your *enviroment*.  vgrep defaults to *vim* if the *EDITOR* environment variable is not set.
+# Opening matches in an editor
+vgrep can open matched lines in the editor specified by the `EDITOR` environment variable (default=vim). Opening one of the matched lines from the previous example may look as follows:
 
 ```
-[~/linux/drivers/usb]$ export EDITOR=gedit
-[~/linux/drivers/usb]$ vgrep --show 40
+# export EDITOR=gedit
+# vgrep --show 4
 ```
 
-![](screenshots/vgrep_cmd_show_gedit.png)
+![](screenshots/vgrep-show-gedit.png)
 
-## vgrep Commands
+Please note, as the default editor of vgrep is vim, the defautl flag to open a file at a specific line is ``+`` followed by the line number.  If your editor of choice hits the rare case of a different syntax, use the `EDITORLINEFLAG` environment variable to adjust.  For example, `kate` user may set the environment to ``EDITOR="kate"`` and ``EDITORLINEFLAG="-l"``.
 
-Once vgreped, you can perform certain operations on the results (via the **'--show'** option) such as limiting the range of displayed hits, listing matched files, etc.  Thanks to [stettberger](https://github.com/stettberger) for adding this functionality to vgrep.
+# vgrep commands and the interactive shell
 
+Once vgreped, you can perform certain operations on the results such as limiting the range of indexed matches, listing matching files and directories, etc.
 ```
-help: <Selector><Cmd>
-      Selector:  `3' (one) `5,23' (mult.) `7-10' (range) `/ker.el/' (regex)
-      Cmd:  print, show, context, tree, delete, files, quit,
-      E.g.: 40,45s -- show matches 40 and 45 in $EDITOR
+Enter a vgrep command: ?
+vgrep command help: command[context lines] [selectors]
+         selectors: '3' (single), '1,2,6' (multi), '1-8' (range)
+          commands: print, show, context, tree, delete, files, quit, ?
 ```
+The vgrep commands can be passed directly to the ``--show/-s`` flag, for instance as ``--show "c5 1-10"`` to show the five context lines of the first then matched lines.  Futhermore, the commands can be executed in an interactive shell via the ``--interactive/-i`` flag. Running ``vgrep --interactive`` will enter the shell directly, ``vgrep --show 1 --interactive`` will first open the first matched line in the editor and enter the interactive shell after.
 
-### Showing Specific Lines
+vgrep supports the following commands:
 
-If you want to print only some of the results, use the option **'--show Np'** to print *N* matches. For instance, to print matches 0 to 9, use **'--show 0-9p'**
+- ``print`` to limit the range of matched lines to be printed. ``p 1-12,20`` prints the first 12 lines and the 20th line.
+- ``show`` to open the selectors in an user-specified editor (requires selectors).
+- ``context`` to print the context lines before and after the matched lines. ``c10 3-9`` prints 10 context lines of the matching lines 3 to 9.  Unless specified, vgrep will print 5 context lines.
+- ``tree`` to print the amount of matches for each directory in the tree.
+- ``files`` will print the amount of matches for each file in the tree.
+- ``quit`` to exit the interactive shell.
+- ``?`` to show the help for vgrep commands.
 
-### Excluding Specific Lines
+# vgrep command examples
 
-If you do not want to see some lines for your search, use the option **'--show Nd'** to exclude *N* matches.  The following command will not show the 9 first matches: ```vgrep request --show 0-9d```
+## Context lines
+![](screenshots/vgrep-context.png)
 
-### Showing Context Lines
+## Tree
+![](screenshots/vgrep-tree.png)
 
-Sometimes it is helpful to see the context of matching lines.  Use **'--show c N'** to see *N* context lines.  Note that the displayed source code is highlighted when the **pygments** package is installed (e.g., ```pip3 install pygments```).
-
-* To see all matches with 3 context lines, use **'--show c3'**
-* To see matches 2 and 10 with 3 context lines, use **'--show 2,10c3'**
-* To print 3 context lines for matches 10 to 13 of request, use **'--show 10-13c3'**
-
-![](screenshots/vgrep_cmd_context.png)
-
-### Showing the Directory Tree
-
-The directory tree with a summary of all matches in the respective directory can be shown with **'--show t'**.
-
-![](screenshots/vgrep_cmd_tree.png)
+## Files
+![](screenshots/vgrep-files.png)
