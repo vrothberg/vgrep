@@ -176,7 +176,7 @@ func grep(args []string) {
 		Matches[i][0] = strconv.Itoa(i)
 		Matches[i][1] = file
 		Matches[i][2] = line
-		Matches[i][3] = strings.TrimSpace(content)
+		Matches[i][3] = content
 	}
 
 	Log.Debugf("Found %d matches", len(Matches))
@@ -470,6 +470,7 @@ func commandPrintMatches(indices []int) bool {
 	cw.Colors = []ansi.COLOR{ansi.YELLOW, ansi.BLUE, ansi.GREEN, ansi.DEFAULT}
 	cw.Padding = []colwriter.PaddingFunc{colwriter.PadLeft, colwriter.PadRight, colwriter.PadLeft, colwriter.PadNone}
 	cw.UseLess = !Options.NoLess
+	cw.Trim = []bool{false, false, false, true}
 
 	cw.Open()
 	cw.Write(toPrint)

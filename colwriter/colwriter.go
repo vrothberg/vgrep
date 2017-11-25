@@ -31,6 +31,7 @@ type ColWriter struct {
 	Padding []PaddingFunc  // left, right, none
 	Headers bool           // text in first row will be underlined
 	UseLess bool           // use less(1) instead of os.Stdout
+	Trim    []bool         // trim space of column
 	writer  *bufio.Writer  // in case we use less(1)
 	pipe    io.WriteCloser // in case we use less(1)
 	cmd     *exec.Cmd      // required for cmd.Wait() for less(1)
@@ -45,6 +46,7 @@ func New(numColumns int) *ColWriter {
 		Padding: make([]PaddingFunc, numColumns),
 		Headers: false,
 		UseLess: false,
+		Trim:    make([]bool, numColumns),
 		writer:  bufio.NewWriter(os.Stdout),
 		opened:  false,
 	}
@@ -140,6 +142,9 @@ func (cw *ColWriter) Write(rows [][]string) {
 			bright = false
 		}
 		for i, str := range row {
+			if cw.Trim[i] {
+				str = strings.TrimSpace(str)
+			}
 			out := cw.Padding[i](str, cw.Size[i], " ")
 			out = ansi.Color(out, cw.Colors[i], bright)
 			if i < max {
