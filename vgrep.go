@@ -1,6 +1,6 @@
 package main
 
-// (c) 2017 Valentin Rothberg <valentinrothberg@gmail.com>
+// (c) 2015-2017 Valentin Rothberg <valentinrothberg@gmail.com>
 //
 // Licensed under the terms of the GNU GPL License version 3.
 
@@ -186,7 +186,7 @@ func grep(args []string) {
 // match varies depending if it has been produced by grep or git-grep.
 func splitMatch(match string, gitgrep bool) (file, line, content string) {
 	spl := bytes.SplitN([]byte(match), []byte{0}, 3)
-	if gitgrep == true {
+	if gitgrep {
 		return string(spl[0]), string(spl[1]), string(spl[2])
 	}
 	// the 2nd separator of grep is ":"
@@ -356,7 +356,7 @@ func dispatchCommand(input string) bool {
 	if len(input) == 0 {
 		return false
 	}
-	cmdRgx := regexp.MustCompile("^([a-z?]{1,})([\\d]+){0,1}([\\d , -]+){0,1}$")
+	cmdRgx := regexp.MustCompile(`^([a-z?]{1,})([\\d]+){0,1}([\\d , -]+){0,1}$`)
 
 	if !cmdRgx.MatchString(input) {
 		fmt.Printf("\"%s\" doesn't match format \"command[context lines] [selectors]\"\n", input)
