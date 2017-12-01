@@ -4,9 +4,9 @@
 
 Please, feel free to copy, improve, distribute and share.  Feedback and patches are always welcome!
 
-Notice for packaging: To ease packaging, vgrep ships all external dependencies in the `vendor/` directory. If you have no prior experience in building packages in golang, feel free to check out and use the `buildInContainer` make target (requires docker).
+Notice for packaging: To ease packaging, vgrep ships all external dependencies in the `vendor/` directory. If you have no prior experience in building software in golang, feel free to check out and use the `buildInContainer` make target (requires docker).
 
-## NEWS - vgrep has moved to golang (no official release yet)
+## NEWS - vgrep 2.0.0 has moved to golang
 The old vgrep implementation in Python can be found in the "python" branch for historical reasons. The main changes include:
 
  - The `--no-git-submodules` flag has been removed as git-grep supports recursing into submodules (see ``--recurse-submodules``) since git v2.12.
