@@ -8,4 +8,4 @@ WORKDIR /go/src/$PROJECT
 
 ENV GOPATH /go
 
-CMD make build
+CMD make release

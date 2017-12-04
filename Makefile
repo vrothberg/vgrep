@@ -16,7 +16,7 @@ build: $(GO_SRC)
 	 $(GO) build -o $(BUILD_DIR)/$(NAME) -ldflags "-s -w -X main.version=${VERSION}-$(COMMIT)-dev"
 
 .PHONY: release
-release: check
+release: $(GO_SRC)
 	 $(GO) build -o $(BUILD_DIR)/$(NAME) -ldflags "-s -w -X main.version=${VERSION}"
 
 .PHONY: clean
