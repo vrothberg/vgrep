@@ -356,7 +356,7 @@ func dispatchCommand(input string) bool {
 	if len(input) == 0 {
 		return false
 	}
-	cmdRgx := regexp.MustCompile(`^([a-z?]{1,})([\\d]+){0,1}([\\d , -]+){0,1}$`)
+	cmdRgx := regexp.MustCompile("^([a-z?]{1,})([\\d]+){0,1}([\\d , -]+){0,1}$")
 
 	if !cmdRgx.MatchString(input) {
 		fmt.Printf("\"%s\" doesn't match format \"command[context lines] [selectors]\"\n", input)
