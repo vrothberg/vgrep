@@ -13,11 +13,11 @@ all: check build
 
 .PHONY: build
 build: $(GO_SRC)
-	 $(GO) build -o $(BUILD_DIR)/$(NAME) -ldflags "-s -w -X main.version=${VERSION}-$(COMMIT)-dev"
+	 $(GO) build -buildmode=pie -o $(BUILD_DIR)/$(NAME) -ldflags "-s -w -X main.version=${VERSION}-$(COMMIT)-dev"
 
 .PHONY: release
 release: $(GO_SRC)
-	 $(GO) build -o $(BUILD_DIR)/$(NAME) -ldflags "-s -w -X main.version=${VERSION}"
+	 $(GO) build -buildmode=pie -o $(BUILD_DIR)/$(NAME) -ldflags "-s -w -X main.version=${VERSION}"
 
 .PHONY: clean
 clean:
