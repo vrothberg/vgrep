@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
@@ -213,8 +214,25 @@ func getEditorLineFlag() string {
 }
 
 // cachePath returns the path to the user-specific vgrep cache.
-func cachePath() string {
-	return os.Getenv("HOME") + "/.cache/vgrep-go"
+func cachePath() (string, error) {
+	cache := filepath.Join(os.Getenv("HOME"), ".cache/")
+	exists := true
+
+	if _, err := os.Stat(cache); err != nil {
+		if os.IsNotExist(err) {
+			exists = false
+		} else {
+			return "", err
+		}
+	}
+
+	if !exists {
+		if err := os.Mkdir(cache, 0700); err != nil {
+			return "", err
+		}
+	}
+
+	return filepath.Join(cache, "vgrep-go"), nil
 }
 
 // cacheWrite uses cacheWriterHelper to write to the user-specific vgrep cache.
@@ -236,7 +254,11 @@ func cacheWriterHelper() error {
 		return fmt.Errorf("error getting working dir: %v", err)
 	}
 
-	file, err := os.OpenFile(cachePath(), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
+	cache, err := cachePath()
+	if err != nil {
+		return fmt.Errorf("error getting cache path: %v", err)
+	}
+	file, err := os.OpenFile(cache, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
 	if err != nil {
 		return err
 	}
@@ -260,12 +282,19 @@ func loadCache() error {
 	Log.Debug("loadCache(): start")
 	defer Log.Debug("loadCache(): end")
 
-	file, err := ioutil.ReadFile(cachePath())
+	cache, err := cachePath()
+	if err != nil {
+		return fmt.Errorf("error getting cache path: %v", err)
+	}
+
+	file, err := ioutil.ReadFile(cache)
 	if err != nil {
 		return err
 	}
+
 	if err := json.Unmarshal(file, &Matches); err != nil {
-		os.Remove(cachePath())
+		// if there's an error unmarshalling it, remove the cache file
+		os.Remove(cache)
 		return err
 	}
 
