@@ -1,0 +1,11 @@
+language: go
+go:
+        - 1.10.x
+        - tip
+
+before_script:
+        - go get github.com/golang/lint/golint
+
+script:
+        - make check
+        - make build
