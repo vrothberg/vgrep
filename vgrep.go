@@ -522,7 +522,7 @@ func getContextLines(index int, numLines int) [][]string {
 
 	file, err := os.Open(path)
 	if err != nil {
-		Log.Warnf("Error opening file '%s': %v", file, err)
+		Log.Warnf("Error opening file '%s': %v", path, err)
 		return nil
 	}
 	defer file.Close()
