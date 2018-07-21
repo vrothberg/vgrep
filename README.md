@@ -4,19 +4,6 @@
 
 Please, feel free to copy, improve, distribute and share.  Feedback and patches are always welcome!
 
-## NEWS - vgrep 2.0.0 has moved to golang
-The old vgrep implementation in Python can be found in the "python" branch for historical reasons. The main changes include:
-
- - The `--no-git-submodules` flag has been removed as git-grep supports recursing into submodules (see ``--recurse-submodules``) since git v2.12.
- - The code highlighting of context lines (`--show c`) has been dropped as pygments doesn't perform well with some widely used color schemes, such as solarized.  Code highlighting may be re-added in a future release.
- - The grammar to execute vgrep commands has changed from ``[selectors] command`` to ``command[context] [selectors]``.  This change was necessary to discriminate context lines from selectors, what did not work properly before.  Extending the selectors also doesn't require to delete the entire line anymore.
- - Regex selectors were broken and have been removed for now.  As vgrep pipes its output to `less`, there are various alternatives to further search in and navigate through the output.
- - The versioning scheme changed from the Ubuntu-like versioning of ``month.year-patch`` to semantic versioning of ``major.minor.patch``.  Please refer to http://semver.org/ to read about the benefits of this versioning scheme.
-
-There are two main reasons for having ported vgrep from Python to golang.  First, although the previous code base was Python on steroids, the language has certain performance penalties that became a bottleneck when operating on large amounts of data; the implementation in golang is several factors faster and easier to maintain. Second, although there are valid arguments to use even more performant programming languages than golang, such as C, C++ or Rust, but C and C++ are hard to maintain dinosaurs and I simply prefer golang over Rust.
-
-Please open an issue in case you experience any troubles after upgrading to the golang version.
-
 # Build instructions and dependencies
 To ease packaging and compilation, vgrep ships all external dependencies in the `vendor/` directory.  For compilation, it is important to place the source tree in a path that follows the pattern `$GOPATH/src/github.com/vrothberg/vgrep/`.  Feel free to check out the `buildInContainer` make target and the `Dockerfile` too see an example setup for compilation.
 
