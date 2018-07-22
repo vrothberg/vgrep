@@ -36,6 +36,13 @@ check: $(GO_SRC)
 	@go doc cmd/vet >/dev/null 2>/dev/null|| (echo "ERROR: go vet not found." && false)
 	test -z "$$($(GO) vet $$($(GO) list $(PROJECT)/...) 2>&1 | tee /dev/stderr)"
 
+.PHONY: test
+test: test-integration
+
+.PHONY: test-integration
+test-integration:
+	bats test/*.bats
+
 IMAGENAME := vgrepdev
 .PHONY:
 buildImage:
