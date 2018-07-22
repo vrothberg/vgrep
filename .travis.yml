@@ -9,3 +9,4 @@ before_script:
 script:
         - make check
         - make build
+        - make test
