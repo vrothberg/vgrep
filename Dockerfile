@@ -1,11 +1,8 @@
-FROM opensuse:42.3
-
-RUN zypper --non-interactive ref
-RUN zypper --non-interactive in --no-recommends make git go
+FROM golang:latest
 
 ARG PROJECT=XXX
+ENV GOPATH /go
 WORKDIR /go/src/$PROJECT
 
-ENV GOPATH /go
-
-CMD make release
+RUN go get -u github.com/LK4D4/vndr
+RUN go get -u golang.org/x/lint/golint
