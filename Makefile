@@ -6,6 +6,7 @@ NAME := vgrep
 PROJECT := github.com/vrothberg/vgrep
 VERSION := $(shell cat ./VERSION)
 COMMIT := $(shell git rev-parse HEAD 2> /dev/null || true)
+CONTAINER_RUNTIME := $(shell command -v podman 2> /dev/null || echo docker)
 
 GO_SRC=$(shell find . -name \*.go)
 
@@ -43,15 +44,6 @@ test: test-integration
 test-integration:
 	bats test/*.bats
 
-IMAGENAME := vgrepdev
-.PHONY:
-buildImage:
-	docker build -f Dockerfile -t $(IMAGENAME) --build-arg PROJECT=$(PROJECT) .
-
-.PHONY: buildInContainer
-buildInContainer: buildImage
-	docker run --rm -v `pwd`:/go/src/$(PROJECT) $(IMAGENAME)
-
 .PHONY: vendor
 vendor:
 	vndr
@@ -63,3 +55,24 @@ install:
 .PHONY: uninstall
 uninstall:
 	sudo rm $(BIN_DIR)/$(NAME)
+
+# CONTAINER MAKE TARGETS
+
+CONTAINER_IMAGE := vgrepdev
+CONTAINER_RUNCMD := run --rm --privileged -v `pwd`:/go/src/$(PROJECT)
+
+.PHONY: container-image
+container-image:
+	$(CONTAINER_RUNTIME) build -f Dockerfile -t $(CONTAINER_IMAGE) --build-arg PROJECT=$(PROJECT) .
+
+.PHONY: container-build
+container-build: container-image
+	$(CONTAINER_RUNTIME) $(CONTAINER_RUNCMD) $(CONTAINER_IMAGE) make build
+
+.PHONY: container-release
+container-release: container-image
+	$(CONTAINER_RUNTIME) $(CONTAINER_RUNCMD) $(CONTAINER_IMAGE) make release
+
+.PHONY: container-shell
+container-shell: container-image
+	$(CONTAINER_RUNTIME) $(CONTAINER_RUNCMD) -it $(CONTAINER_IMAGE) sh
