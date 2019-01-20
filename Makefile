@@ -52,6 +52,10 @@ buildImage:
 buildInContainer: buildImage
 	docker run --rm -v `pwd`:/go/src/$(PROJECT) $(IMAGENAME)
 
+.PHONY: vendor
+vendor:
+	vndr
+
 .PHONY: install
 install:
 	sudo install -D -m755 $(BUILD_DIR)/$(NAME) $(BIN_DIR)
