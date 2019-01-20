@@ -20,8 +20,8 @@ import (
 
 	"github.com/jessevdk/go-flags"
 	"github.com/sirupsen/logrus"
-	"github.com/vrothberg/vgrep/ansi"
-	"github.com/vrothberg/vgrep/colwriter"
+	"github.com/vrothberg/vgrep/internal/ansi"
+	"github.com/vrothberg/vgrep/internal/colwriter"
 )
 
 // cliArgs passed to go-flags
