@@ -17,7 +17,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/vrothberg/vgrep/ansi"
+	"github.com/vrothberg/vgrep/internal/ansi"
 )
 
 // PaddingFunc is a prototype for padding to make the padding configurable for
