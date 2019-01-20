@@ -70,7 +70,10 @@ func main() {
 	if len(args) == 0 {
 		err = loadCache()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "No cache: %v\n", err)
+			if os.IsNotExist(err) {
+				os.Exit(0)
+			}
+			fmt.Fprintf(os.Stderr, "Error loading cache: %v\n", err)
 			os.Exit(1)
 		}
 	} else {
