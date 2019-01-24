@@ -51,7 +51,7 @@ func main() {
 	var err error
 	var waiter sync.WaitGroup
 
-	// Unkown flags will be ignored and stored in args to further pass them
+	// Unknown flags will be ignored and stored in args to further pass them
 	// to (git) grep.
 	parser := flags.NewParser(&Options, flags.Default|flags.IgnoreUnknown)
 	args, err := parser.ParseArgs(os.Args[1:])
@@ -71,7 +71,7 @@ func main() {
 
 	Log.Debugf("passed args: %s", args)
 
-	// Load the cache if there's no new querry, otherwise execute a new one.
+	// Load the cache if there's no new query, otherwise execute a new one.
 	err = makeLockFile()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error creating lock file: %v\n", err)
@@ -98,7 +98,7 @@ func main() {
 	}
 
 	// Execute the specified command and/or jump directly into the
-	// interactive sheel.
+	// interactive shell.
 	if Options.Show != "" || Options.Interactive {
 		commandParse(Options.Show)
 		waiter.Wait()
@@ -342,7 +342,7 @@ func cacheWriterHelper() error {
 	return file.Close()
 }
 
-// loadsCache loads the user-specific vgrep cache.
+// loadCache loads the user-specific vgrep cache.
 func loadCache() error {
 	Log.Debug("loadCache(): start")
 	defer Log.Debug("loadCache(): end")
@@ -394,8 +394,8 @@ func sortKeys(m map[string]int) []string {
 }
 
 // commandParse starts and dispatches user-specific vgrep commands.  If input
-// matches a vgrep selector commanShow will be executed.  It will promt the
-// user for commands we're running in interactive mode.
+// matches a vgrep selector commandShow will be executed. It will prompt the
+// user for commands if we're running in interactive mode.
 func commandParse(input string) {
 	Log.Debugf("commandParse(input=%s)", input)
 
