@@ -17,8 +17,11 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/jessevdk/go-flags"
+	"github.com/nightlyone/lockfile"
 	"github.com/sirupsen/logrus"
 	"github.com/vrothberg/vgrep/internal/ansi"
 	"github.com/vrothberg/vgrep/internal/colwriter"
@@ -41,10 +44,12 @@ var (
 	Matches [][]string
 	Log     = logrus.New()
 	version string // set in the Makefile
+	Lock    lockfile.Lockfile
 )
 
 func main() {
 	var err error
+	var waiter sync.WaitGroup
 
 	// Unkown flags will be ignored and stored in args to further pass them
 	// to (git) grep.
@@ -67,6 +72,12 @@ func main() {
 	Log.Debugf("passed args: %s", args)
 
 	// Load the cache if there's no new querry, otherwise execute a new one.
+	err = makeLockFile()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error creating lock file: %v\n", err)
+		os.Exit(1)
+	}
+
 	if len(args) == 0 {
 		err = loadCache()
 		if err != nil {
@@ -77,8 +88,9 @@ func main() {
 			os.Exit(1)
 		}
 	} else {
+		waiter.Add(1)
 		grep(args)
-		cacheWrite() // this runs in the background
+		cacheWrite(&waiter) // this runs in the background
 	}
 
 	if len(Matches) == 0 {
@@ -89,6 +101,7 @@ func main() {
 	// interactive sheel.
 	if Options.Show != "" || Options.Interactive {
 		commandParse(Options.Show)
+		waiter.Wait()
 		os.Exit(0)
 	}
 
@@ -96,6 +109,8 @@ func main() {
 	if len(Matches) > 0 {
 		commandPrintMatches([]int{})
 	}
+
+	waiter.Wait()
 }
 
 // runCommand executes the program specified in args and returns the stdout as
@@ -216,6 +231,42 @@ func getEditorLineFlag() string {
 	return editor
 }
 
+// Create the lock file to guard against concurrent processes
+func makeLockFile() error {
+	var err error
+	lockdir := filepath.Join(os.Getenv("HOME"), ".local/share/vgrep")
+	exists := true
+
+	if _, err := os.Stat(lockdir); err != nil {
+		if os.IsNotExist(err) {
+			exists = false
+		} else {
+			return err
+		}
+	}
+
+	if !exists {
+		if err := os.MkdirAll(lockdir, 0700); err != nil {
+			return err
+		}
+	}
+	Lock, err = lockfile.New(filepath.Join(lockdir, "cache-lock"))
+	return err
+}
+
+// Try to acquire the lock file for the cache
+func acquireLock() error {
+	for err := Lock.TryLock(); err != nil; err = Lock.TryLock() {
+		// If the lock is busy, wait for it, otherwise error out
+		if err != lockfile.ErrBusy {
+			return err
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	return nil
+}
+
 // cachePath returns the path to the user-specific vgrep cache.
 func cachePath() (string, error) {
 	cache := filepath.Join(os.Getenv("HOME"), ".cache/")
@@ -239,8 +290,9 @@ func cachePath() (string, error) {
 }
 
 // cacheWrite uses cacheWriterHelper to write to the user-specific vgrep cache.
-func cacheWrite() {
+func cacheWrite(waiter *sync.WaitGroup) {
 	go func() {
+		defer waiter.Done()
 		if err := cacheWriterHelper(); err != nil {
 			Log.Debugf("error writing cache: %v", err)
 		}
@@ -261,6 +313,12 @@ func cacheWriterHelper() error {
 	if err != nil {
 		return fmt.Errorf("error getting cache path: %v", err)
 	}
+
+	if err := acquireLock(); err != nil {
+		return fmt.Errorf("error acquiring lock file: %v", err)
+	}
+	defer Lock.Unlock()
+
 	file, err := os.OpenFile(cache, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
 	if err != nil {
 		return err
@@ -277,6 +335,10 @@ func cacheWriterHelper() error {
 		return err
 	}
 
+	if err := file.Sync(); err != nil {
+		return err
+	}
+
 	return file.Close()
 }
 
@@ -289,6 +351,11 @@ func loadCache() error {
 	if err != nil {
 		return fmt.Errorf("error getting cache path: %v", err)
 	}
+
+	if err := acquireLock(); err != nil {
+		return err
+	}
+	defer Lock.Unlock()
 
 	file, err := ioutil.ReadFile(cache)
 	if err != nil {
