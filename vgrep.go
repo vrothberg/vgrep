@@ -518,11 +518,12 @@ func dispatchCommand(input string) bool {
 	if command == "s" || command == "show" {
 		if len(indices) == 0 {
 			fmt.Println("Show requires specified selectors")
-			return false
+		} else {
+			for _, idx := range indices {
+				commandShow(idx)
+			}
 		}
-		for _, idx := range indices {
-			commandShow(idx)
-		}
+		return false
 	}
 
 	if command == "t" || command == "tree" {
