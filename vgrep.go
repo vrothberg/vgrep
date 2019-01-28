@@ -78,7 +78,7 @@ func main() {
 	// Load the cache if there's no new query, otherwise execute a new one.
 	err = v.makeLockFile()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error creating lock file: %v\n", err)
+		fmt.Fprintf(os.Stderr, "error creating lock file: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -88,7 +88,7 @@ func main() {
 			if os.IsNotExist(err) {
 				os.Exit(0)
 			}
-			fmt.Fprintf(os.Stderr, "Error loading cache: %v\n", err)
+			fmt.Fprintf(os.Stderr, "error loading cache: %v\n", err)
 			os.Exit(1)
 		}
 	} else {
@@ -132,7 +132,7 @@ func (v *vgrep) runCommand(args []string, env string) ([]string, error) {
 
 	err := cmd.Run()
 	if err != nil {
-		logrus.Debugf("error running command: %s", err)
+		logrus.Debugf("error running command: %v", err)
 		errStr := err.Error()
 		if errStr == "exit status 1" {
 			logrus.Debug("ignoring error (no matches found)")
@@ -168,8 +168,6 @@ func (v *vgrep) grep(args []string) {
 	var usegit bool
 	var env string
 
-	logrus.Debugf("grep(args=%s)", args)
-
 	usegit = v.insideGitTree() && !v.NoGit
 
 	if usegit {
@@ -188,7 +186,7 @@ func (v *vgrep) grep(args []string) {
 
 	output, err := v.runCommand(cmd, env)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Searching symbols failed: %v\n", err)
+		fmt.Fprintf(os.Stderr, "searching symbols failed: %v\n", err)
 		os.Exit(1)
 	}
 	v.matches = make([][]string, len(output))
@@ -202,7 +200,7 @@ func (v *vgrep) grep(args []string) {
 		v.matches[i][3] = content
 	}
 
-	logrus.Debugf("Found %d matches", len(v.matches))
+	logrus.Debugf("found %d matches", len(v.matches))
 }
 
 // splitMatch splits match into its file, line and content.  The format of
@@ -402,7 +400,6 @@ func sortKeys(m map[string]int) []string {
 // prompt the user for commands if we're running in interactive mode.
 func (v *vgrep) commandParse() {
 	input := v.Show
-	logrus.Debugf("commandParse(input=%s)", input)
 
 	if indices, err := v.parseSelectors(input); err == nil && len(indices) > 0 {
 		input = "s "
@@ -423,7 +420,7 @@ func (v *vgrep) commandParse() {
 			os.Exit(1)
 		}
 		usrInp := scanner.Text()
-		logrus.Debugf("User input: %s", usrInp)
+		logrus.Debugf("user input: %q", usrInp)
 		return usrInp
 	}
 
@@ -448,7 +445,7 @@ func (v *vgrep) checkIndices(indices []int) ([]int, error) {
 	}
 	for _, idx := range indices {
 		if idx < 0 || idx > len(v.matches)-1 {
-			return nil, fmt.Errorf("Index %d out of range (%d, %d)", idx, 0, len(v.matches)-1)
+			return nil, fmt.Errorf("index %d out of range (%d, %d)", idx, 0, len(v.matches)-1)
 		}
 	}
 	return indices, nil
@@ -463,7 +460,7 @@ func (v *vgrep) dispatchCommand(input string) bool {
 	cmdRgx := regexp.MustCompile("^([a-z?]{1,})([\\d]+){0,1}([\\d , -]+){0,1}$")
 
 	if !cmdRgx.MatchString(input) {
-		fmt.Printf("\"%s\" doesn't match format \"command[context lines] [selectors]\"\n", input)
+		fmt.Printf("%q doesn't match format %q\n", input, "command[context lines] [selectors]")
 		return false
 	}
 
@@ -479,7 +476,8 @@ func (v *vgrep) dispatchCommand(input string) bool {
 		var err error
 		context, err = strconv.Atoi(cmdArray[2])
 		if err != nil {
-			fmt.Printf("Cannot convert specified context lines '%d': %v", context, err)
+			fmt.Printf("cannot convert specified context lines %q: %v", cmdArray[2], err)
+			return false
 		}
 	}
 
@@ -502,7 +500,7 @@ func (v *vgrep) dispatchCommand(input string) bool {
 
 	if command == "d" || command == "delete" {
 		if len(indices) == 0 {
-			fmt.Println("Delete requires specified selectors")
+			fmt.Println("delete requires specified selectors")
 			return false
 		}
 		return v.commandDelete(indices)
@@ -522,7 +520,7 @@ func (v *vgrep) dispatchCommand(input string) bool {
 
 	if command == "s" || command == "show" {
 		if len(indices) == 0 {
-			fmt.Println("Show requires specified selectors")
+			fmt.Println("show requires specified selectors")
 		} else {
 			for _, idx := range indices {
 				v.commandShow(idx)
@@ -535,7 +533,7 @@ func (v *vgrep) dispatchCommand(input string) bool {
 		return v.commandListTree(indices)
 	}
 
-	fmt.Printf("Unsupported command \"%s\"\n", command)
+	fmt.Printf("unsupported command %q\n", command)
 	return false
 }
 
@@ -592,13 +590,13 @@ func (v *vgrep) getContextLines(index int, numLines int) [][]string {
 	path := v.matches[index][1]
 	line, err := strconv.Atoi(v.matches[index][2])
 	if err != nil {
-		logrus.Warnf("Error converting '%s': %v", path, err)
+		logrus.Warnf("error converting %q: %v", path, err)
 		return nil
 	}
 
 	file, err := os.Open(path)
 	if err != nil {
-		logrus.Warnf("Error opening file '%s': %v", path, err)
+		logrus.Warnf("error opening file %q: %v", path, err)
 		return nil
 	}
 	defer file.Close()
@@ -673,7 +671,7 @@ func (v *vgrep) commandDelete(indices []int) bool {
 	}
 
 	for offset, idx := range indices {
-		logrus.Debugf("Deleting index '%d'", idx)
+		logrus.Debugf("deleting index %d", idx)
 		for i := idx + 1; i < len(v.matches); i++ {
 			v.matches[i][0] = strconv.Itoa(i - 1)
 		}
@@ -702,7 +700,7 @@ func (v *vgrep) commandShow(index int) bool {
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		fmt.Printf("Couldn't open match: %v\n", err)
+		fmt.Printf("douldn't open index %d: %v\n", index, err)
 	}
 
 	return false
@@ -805,7 +803,7 @@ func (v *vgrep) parseSelectors(input string) ([]int, error) {
 		idx = strings.TrimSpace(idx)
 		num, err := strconv.Atoi(idx)
 		if err != nil {
-			return -1, fmt.Errorf("Non-numeric selector '%s'", idx)
+			return -1, fmt.Errorf("non-numeric selector %q", idx)
 		}
 		return num, nil
 	}
@@ -845,7 +843,7 @@ func (v *vgrep) parseSelectors(input string) ([]int, error) {
 				addIndex(i)
 			}
 		} else {
-			return nil, fmt.Errorf("Invalid range format '%s'", sel)
+			return nil, fmt.Errorf("invalid range format %q", sel)
 		}
 	}
 
