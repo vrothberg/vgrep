@@ -1,6 +1,6 @@
 package main
 
-// (c) 2015-2017 Valentin Rothberg <valentinrothberg@gmail.com>
+// (c) 2015-2019 Valentin Rothberg <valentinrothberg@gmail.com>
 //
 // Licensed under the terms of the GNU GPL License version 3.
 
@@ -42,7 +42,6 @@ type cliArgs struct {
 var (
 	Options cliArgs
 	Matches [][]string
-	Log     = logrus.New()
 	version string // set in the Makefile
 	Lock    lockfile.Lockfile
 )
@@ -65,11 +64,11 @@ func main() {
 	}
 
 	if Options.Debug {
-		Log.SetLevel(logrus.DebugLevel)
-		Log.Debug("log level set to debug")
+		logrus.SetLevel(logrus.DebugLevel)
+		logrus.Debug("log level set to debug")
 	}
 
-	Log.Debugf("passed args: %s", args)
+	logrus.Debugf("passed args: %s", args)
 
 	// Load the cache if there's no new query, otherwise execute a new one.
 	err = makeLockFile()
@@ -119,7 +118,7 @@ func runCommand(args []string, env string) ([]string, error) {
 	var cmd *exec.Cmd
 	var sout, serr bytes.Buffer
 
-	Log.Debugf("runCommand(args=%s, env=%s)", args, env)
+	logrus.Debugf("runCommand(args=%s, env=%s)", args, env)
 
 	cmd = exec.Command(args[0], args[1:]...)
 	cmd.Stdout = &sout
@@ -128,10 +127,10 @@ func runCommand(args []string, env string) ([]string, error) {
 
 	err := cmd.Run()
 	if err != nil {
-		Log.Debugf("error running command: %s", err)
+		logrus.Debugf("error running command: %s", err)
 		errStr := err.Error()
 		if errStr == "exit status 1" {
-			Log.Debug("ignoring error (no matches found)")
+			logrus.Debug("ignoring error (no matches found)")
 			err = nil
 		} else {
 			spl := strings.Split(serr.String(), "\n")
@@ -154,7 +153,7 @@ func insideGitTree() bool {
 		inside = true
 	}
 
-	Log.Debugf("insideGitTree() -> %v", inside)
+	logrus.Debugf("insideGitTree() -> %v", inside)
 	return inside
 }
 
@@ -164,7 +163,7 @@ func grep(args []string) {
 	var usegit bool
 	var env string
 
-	Log.Debugf("grep(args=%s)", args)
+	logrus.Debugf("grep(args=%s)", args)
 
 	usegit = insideGitTree() && !Options.NoGit
 
@@ -198,7 +197,7 @@ func grep(args []string) {
 		Matches[i][3] = content
 	}
 
-	Log.Debugf("Found %d matches", len(Matches))
+	logrus.Debugf("Found %d matches", len(Matches))
 }
 
 // splitMatch splits match into its file, line and content.  The format of
@@ -294,15 +293,15 @@ func cacheWrite(waiter *sync.WaitGroup) {
 	go func() {
 		defer waiter.Done()
 		if err := cacheWriterHelper(); err != nil {
-			Log.Debugf("error writing cache: %v", err)
+			logrus.Debugf("error writing cache: %v", err)
 		}
 	}()
 }
 
 // cacheWriterHelper writes to the user-specific vgrep cache.
 func cacheWriterHelper() error {
-	Log.Debug("cacheWriterHelper(): start")
-	defer Log.Debug("cacheWriterHelper(): end")
+	logrus.Debug("cacheWriterHelper(): start")
+	defer logrus.Debug("cacheWriterHelper(): end")
 
 	workDir, err := os.Getwd()
 	if err != nil {
@@ -344,8 +343,8 @@ func cacheWriterHelper() error {
 
 // loadCache loads the user-specific vgrep cache.
 func loadCache() error {
-	Log.Debug("loadCache(): start")
-	defer Log.Debug("loadCache(): end")
+	logrus.Debug("loadCache(): start")
+	defer logrus.Debug("loadCache(): end")
 
 	cache, err := cachePath()
 	if err != nil {
@@ -397,7 +396,7 @@ func sortKeys(m map[string]int) []string {
 // matches a vgrep selector commandShow will be executed. It will prompt the
 // user for commands if we're running in interactive mode.
 func commandParse(input string) {
-	Log.Debugf("commandParse(input=%s)", input)
+	logrus.Debugf("commandParse(input=%s)", input)
 
 	if indices, err := parseSelectors(input); err == nil && len(indices) > 0 {
 		input = "s "
@@ -418,7 +417,7 @@ func commandParse(input string) {
 			os.Exit(1)
 		}
 		usrInp := scanner.Text()
-		Log.Debugf("User input: %s", usrInp)
+		logrus.Debugf("User input: %s", usrInp)
 		return usrInp
 	}
 
@@ -587,13 +586,13 @@ func getContextLines(index int, numLines int) [][]string {
 	path := Matches[index][1]
 	line, err := strconv.Atoi(Matches[index][2])
 	if err != nil {
-		Log.Warnf("Error converting '%s': %v", path, err)
+		logrus.Warnf("Error converting '%s': %v", path, err)
 		return nil
 	}
 
 	file, err := os.Open(path)
 	if err != nil {
-		Log.Warnf("Error opening file '%s': %v", path, err)
+		logrus.Warnf("Error opening file '%s': %v", path, err)
 		return nil
 	}
 	defer file.Close()
@@ -622,7 +621,7 @@ func getContextLines(index int, numLines int) [][]string {
 func commandPrintContextLines(indices []int, numLines int) bool {
 	var err error
 
-	Log.Debugf("commandPrintContextLines(indices=[..], numlines=%d)", numLines)
+	logrus.Debugf("commandPrintContextLines(indices=[..], numlines=%d)", numLines)
 	indices, err = checkIndices(indices)
 	if err != nil {
 		fmt.Printf("%v\n", err)
@@ -668,7 +667,7 @@ func commandDelete(indices []int) bool {
 	}
 
 	for offset, idx := range indices {
-		Log.Debugf("Deleting index '%d'", idx)
+		logrus.Debugf("Deleting index '%d'", idx)
 		for i := idx + 1; i < len(Matches); i++ {
 			Matches[i][0] = strconv.Itoa(i - 1)
 		}
@@ -690,7 +689,7 @@ func commandShow(index int) bool {
 	file := Matches[index][1]
 	lFlag := getEditorLineFlag() + Matches[index][2]
 
-	Log.Debugf("opening index %d via: %s %s %s", index, editor, file, lFlag)
+	logrus.Debugf("opening index %d via: %s %s %s", index, editor, file, lFlag)
 	cmd := exec.Command(editor, file, lFlag)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
