@@ -38,32 +38,36 @@ type cliArgs struct {
 	Version     bool   `short:"v" long:"version" description:"Print version number"`
 }
 
-// global variables
-var (
-	Options cliArgs
-	Matches [][]string
-	version string // set in the Makefile
-	Lock    lockfile.Lockfile
-)
+type vgrep struct {
+	options cliArgs
+	matches [][]string
+	lock    lockfile.Lockfile
+	waiter  sync.WaitGroup
+}
+
+// set in the Makefile
+var version string
 
 func main() {
-	var err error
-	var waiter sync.WaitGroup
+	var (
+		err error
+		v   vgrep
+	)
 
 	// Unknown flags will be ignored and stored in args to further pass them
 	// to (git) grep.
-	parser := flags.NewParser(&Options, flags.Default|flags.IgnoreUnknown)
+	parser := flags.NewParser(&v.options, flags.Default|flags.IgnoreUnknown)
 	args, err := parser.ParseArgs(os.Args[1:])
 	if err != nil {
 		os.Exit(1)
 	}
 
-	if Options.Version {
+	if v.options.Version {
 		fmt.Println(version)
 		os.Exit(0)
 	}
 
-	if Options.Debug {
+	if v.options.Debug {
 		logrus.SetLevel(logrus.DebugLevel)
 		logrus.Debug("log level set to debug")
 	}
@@ -71,14 +75,14 @@ func main() {
 	logrus.Debugf("passed args: %s", args)
 
 	// Load the cache if there's no new query, otherwise execute a new one.
-	err = makeLockFile()
+	err = v.makeLockFile()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error creating lock file: %v\n", err)
 		os.Exit(1)
 	}
 
 	if len(args) == 0 {
-		err = loadCache()
+		err = v.loadCache()
 		if err != nil {
 			if os.IsNotExist(err) {
 				os.Exit(0)
@@ -87,34 +91,34 @@ func main() {
 			os.Exit(1)
 		}
 	} else {
-		waiter.Add(1)
-		grep(args)
-		cacheWrite(&waiter) // this runs in the background
+		v.waiter.Add(1)
+		v.grep(args)
+		v.cacheWrite() // this runs in the background
 	}
 
-	if len(Matches) == 0 {
+	if len(v.matches) == 0 {
 		os.Exit(0) // nothing to do anymore
 	}
 
 	// Execute the specified command and/or jump directly into the
 	// interactive shell.
-	if Options.Show != "" || Options.Interactive {
-		commandParse(Options.Show)
-		waiter.Wait()
+	if v.options.Show != "" || v.options.Interactive {
+		v.commandParse()
+		v.waiter.Wait()
 		os.Exit(0)
 	}
 
 	// Last resort, print all matches.
-	if len(Matches) > 0 {
-		commandPrintMatches([]int{})
+	if len(v.matches) > 0 {
+		v.commandPrintMatches([]int{})
 	}
 
-	waiter.Wait()
+	v.waiter.Wait()
 }
 
 // runCommand executes the program specified in args and returns the stdout as
 // a line-separated []string.
-func runCommand(args []string, env string) ([]string, error) {
+func (v *vgrep) runCommand(args []string, env string) ([]string, error) {
 	var cmd *exec.Cmd
 	var sout, serr bytes.Buffer
 
@@ -144,9 +148,9 @@ func runCommand(args []string, env string) ([]string, error) {
 
 // insideGitTree returns true if the current working directory is inside a git
 // tree.
-func insideGitTree() bool {
+func (v *vgrep) insideGitTree() bool {
 	cmd := []string{"git", "rev-parse", "--is-inside-work-tree"}
-	out, _ := runCommand(cmd, "")
+	out, _ := v.runCommand(cmd, "")
 	inside := false
 
 	if len(out) > 0 && out[0] == "true" {
@@ -157,15 +161,15 @@ func insideGitTree() bool {
 	return inside
 }
 
-// grep (git) greps with the specified args and stores the results in Matches.
-func grep(args []string) {
+// grep (git) greps with the specified args and stores the results in v.matches.
+func (v *vgrep) grep(args []string) {
 	var cmd []string
 	var usegit bool
 	var env string
 
 	logrus.Debugf("grep(args=%s)", args)
 
-	usegit = insideGitTree() && !Options.NoGit
+	usegit = v.insideGitTree() && !v.options.NoGit
 
 	if usegit {
 		env = "HOME="
@@ -181,28 +185,28 @@ func grep(args []string) {
 		cmd = append(cmd, "-r", ".")
 	}
 
-	output, err := runCommand(cmd, env)
+	output, err := v.runCommand(cmd, env)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Searching symbols failed: %v\n", err)
 		os.Exit(1)
 	}
-	Matches = make([][]string, len(output))
+	v.matches = make([][]string, len(output))
 
 	for i, m := range output {
-		file, line, content := splitMatch(m, usegit)
-		Matches[i] = make([]string, 4)
-		Matches[i][0] = strconv.Itoa(i)
-		Matches[i][1] = file
-		Matches[i][2] = line
-		Matches[i][3] = content
+		file, line, content := v.splitMatch(m, usegit)
+		v.matches[i] = make([]string, 4)
+		v.matches[i][0] = strconv.Itoa(i)
+		v.matches[i][1] = file
+		v.matches[i][2] = line
+		v.matches[i][3] = content
 	}
 
-	logrus.Debugf("Found %d matches", len(Matches))
+	logrus.Debugf("Found %d matches", len(v.matches))
 }
 
 // splitMatch splits match into its file, line and content.  The format of
 // match varies depending if it has been produced by grep or git-grep.
-func splitMatch(match string, gitgrep bool) (file, line, content string) {
+func (v *vgrep) splitMatch(match string, gitgrep bool) (file, line, content string) {
 	spl := bytes.SplitN([]byte(match), []byte{0}, 3)
 	if gitgrep {
 		return string(spl[0]), string(spl[1]), string(spl[2])
@@ -213,7 +217,7 @@ func splitMatch(match string, gitgrep bool) (file, line, content string) {
 }
 
 // getEditor returns the EDITOR environment variable (default="vim").
-func getEditor() string {
+func (v *vgrep) getEditor() string {
 	editor := os.Getenv("EDITOR")
 	if len(editor) == 0 {
 		editor = "vim"
@@ -222,7 +226,7 @@ func getEditor() string {
 }
 
 // getEditorLineFlag returns the EDITORLINEFLAG environment variable (default="+").
-func getEditorLineFlag() string {
+func (v *vgrep) getEditorLineFlag() string {
 	editor := os.Getenv("EDITORLINEFLAG")
 	if len(editor) == 0 {
 		editor = "+"
@@ -231,7 +235,7 @@ func getEditorLineFlag() string {
 }
 
 // Create the lock file to guard against concurrent processes
-func makeLockFile() error {
+func (v *vgrep) makeLockFile() error {
 	var err error
 	lockdir := filepath.Join(os.Getenv("HOME"), ".local/share/vgrep")
 	exists := true
@@ -249,13 +253,13 @@ func makeLockFile() error {
 			return err
 		}
 	}
-	Lock, err = lockfile.New(filepath.Join(lockdir, "cache-lock"))
+	v.lock, err = lockfile.New(filepath.Join(lockdir, "cache-lock"))
 	return err
 }
 
 // Try to acquire the lock file for the cache
-func acquireLock() error {
-	for err := Lock.TryLock(); err != nil; err = Lock.TryLock() {
+func (v *vgrep) acquireLock() error {
+	for err := v.lock.TryLock(); err != nil; err = v.lock.TryLock() {
 		// If the lock is busy, wait for it, otherwise error out
 		if err != lockfile.ErrBusy {
 			return err
@@ -267,7 +271,7 @@ func acquireLock() error {
 }
 
 // cachePath returns the path to the user-specific vgrep cache.
-func cachePath() (string, error) {
+func (v *vgrep) cachePath() (string, error) {
 	cache := filepath.Join(os.Getenv("HOME"), ".cache/")
 	exists := true
 
@@ -289,17 +293,17 @@ func cachePath() (string, error) {
 }
 
 // cacheWrite uses cacheWriterHelper to write to the user-specific vgrep cache.
-func cacheWrite(waiter *sync.WaitGroup) {
+func (v *vgrep) cacheWrite() {
 	go func() {
-		defer waiter.Done()
-		if err := cacheWriterHelper(); err != nil {
+		defer v.waiter.Done()
+		if err := v.cacheWriterHelper(); err != nil {
 			logrus.Debugf("error writing cache: %v", err)
 		}
 	}()
 }
 
 // cacheWriterHelper writes to the user-specific vgrep cache.
-func cacheWriterHelper() error {
+func (v *vgrep) cacheWriterHelper() error {
 	logrus.Debug("cacheWriterHelper(): start")
 	defer logrus.Debug("cacheWriterHelper(): end")
 
@@ -308,22 +312,22 @@ func cacheWriterHelper() error {
 		return fmt.Errorf("error getting working dir: %v", err)
 	}
 
-	cache, err := cachePath()
+	cache, err := v.cachePath()
 	if err != nil {
 		return fmt.Errorf("error getting cache path: %v", err)
 	}
 
-	if err := acquireLock(); err != nil {
+	if err := v.acquireLock(); err != nil {
 		return fmt.Errorf("error acquiring lock file: %v", err)
 	}
-	defer Lock.Unlock()
+	defer v.lock.Unlock()
 
 	file, err := os.OpenFile(cache, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
 	if err != nil {
 		return err
 	}
 
-	out := append(Matches, []string{workDir})
+	out := append(v.matches, []string{workDir})
 
 	b, err := json.Marshal(out)
 	if err != nil {
@@ -342,34 +346,34 @@ func cacheWriterHelper() error {
 }
 
 // loadCache loads the user-specific vgrep cache.
-func loadCache() error {
+func (v *vgrep) loadCache() error {
 	logrus.Debug("loadCache(): start")
 	defer logrus.Debug("loadCache(): end")
 
-	cache, err := cachePath()
+	cache, err := v.cachePath()
 	if err != nil {
 		return fmt.Errorf("error getting cache path: %v", err)
 	}
 
-	if err := acquireLock(); err != nil {
+	if err := v.acquireLock(); err != nil {
 		return err
 	}
-	defer Lock.Unlock()
+	defer v.lock.Unlock()
 
 	file, err := ioutil.ReadFile(cache)
 	if err != nil {
 		return err
 	}
 
-	if err := json.Unmarshal(file, &Matches); err != nil {
+	if err := json.Unmarshal(file, &v.matches); err != nil {
 		// if there's an error unmarshalling it, remove the cache file
 		os.Remove(cache)
 		return err
 	}
 
-	if length := len(Matches); length > 0 {
-		oldWorkDir := Matches[length-1][0]
-		Matches = Matches[:len(Matches)-1]
+	if length := len(v.matches); length > 0 {
+		oldWorkDir := v.matches[length-1][0]
+		v.matches = v.matches[:len(v.matches)-1]
 		workDir, err := os.Getwd()
 		if err != nil {
 			return fmt.Errorf("error getting working dir: %v", err)
@@ -392,13 +396,14 @@ func sortKeys(m map[string]int) []string {
 	return keys
 }
 
-// commandParse starts and dispatches user-specific vgrep commands.  If input
-// matches a vgrep selector commandShow will be executed. It will prompt the
-// user for commands if we're running in interactive mode.
-func commandParse(input string) {
+// commandParse starts and dispatches user-specific vgrep commands.  If the
+// user input matches a vgrep selector commandShow will be executed. It will
+// prompt the user for commands if we're running in interactive mode.
+func (v *vgrep) commandParse() {
+	input := v.options.Show
 	logrus.Debugf("commandParse(input=%s)", input)
 
-	if indices, err := parseSelectors(input); err == nil && len(indices) > 0 {
+	if indices, err := v.parseSelectors(input); err == nil && len(indices) > 0 {
 		input = "s "
 		for _, i := range indices {
 			input = fmt.Sprintf("%s%d,", input, i)
@@ -422,27 +427,27 @@ func commandParse(input string) {
 	}
 
 	for {
-		quit := dispatchCommand(input)
-		if quit || !Options.Interactive {
+		quit := v.dispatchCommand(input)
+		if quit || !v.options.Interactive {
 			return
 		}
 		input = nextInput()
 	}
 }
 
-// checkIndices is a helper function to fill indices in case it's an empty
+// v.checkIndices is a helper function to fill indices in case it's an empty
 // array and does some range checks otherwise.
-func checkIndices(indices []int) ([]int, error) {
+func (v *vgrep) checkIndices(indices []int) ([]int, error) {
 	if len(indices) == 0 {
-		indices = make([]int, len(Matches))
-		for i := range Matches {
+		indices = make([]int, len(v.matches))
+		for i := range v.matches {
 			indices[i] = i
 		}
 		return indices, nil
 	}
 	for _, idx := range indices {
-		if idx < 0 || idx > len(Matches)-1 {
-			return nil, fmt.Errorf("Index %d out of range (%d, %d)", idx, 0, len(Matches)-1)
+		if idx < 0 || idx > len(v.matches)-1 {
+			return nil, fmt.Errorf("Index %d out of range (%d, %d)", idx, 0, len(v.matches)-1)
 		}
 	}
 	return indices, nil
@@ -450,7 +455,7 @@ func checkIndices(indices []int) ([]int, error) {
 
 // dispatchCommand parses and dispatches the specified vgrep command in input.
 // The return value indicates if dispatching of commands should be stopped.
-func dispatchCommand(input string) bool {
+func (v *vgrep) dispatchCommand(input string) bool {
 	if len(input) == 0 {
 		return false
 	}
@@ -477,21 +482,21 @@ func dispatchCommand(input string) bool {
 		}
 	}
 
-	indices, err := parseSelectors(selectors)
+	indices, err := v.parseSelectors(selectors)
 	if err != nil {
 		fmt.Println(err)
 		return false
 	}
 
 	if command == "?" {
-		return commandPrintHelp()
+		return v.commandPrintHelp()
 	}
 
 	if command == "c" || command == "context" {
 		if context == -1 {
 			context = 5
 		}
-		return commandPrintContextLines(indices, context)
+		return v.commandPrintContextLines(indices, context)
 	}
 
 	if command == "d" || command == "delete" {
@@ -499,15 +504,15 @@ func dispatchCommand(input string) bool {
 			fmt.Println("Delete requires specified selectors")
 			return false
 		}
-		return commandDelete(indices)
+		return v.commandDelete(indices)
 	}
 
 	if command == "f" || command == "files" {
-		return commandListFiles(indices)
+		return v.commandListFiles(indices)
 	}
 
 	if command == "p" || command == "print" {
-		return commandPrintMatches(indices)
+		return v.commandPrintMatches(indices)
 	}
 
 	if command == "q" || command == "quit" {
@@ -519,14 +524,14 @@ func dispatchCommand(input string) bool {
 			fmt.Println("Show requires specified selectors")
 		} else {
 			for _, idx := range indices {
-				commandShow(idx)
+				v.commandShow(idx)
 			}
 		}
 		return false
 	}
 
 	if command == "t" || command == "tree" {
-		return commandListTree(indices)
+		return v.commandListTree(indices)
 	}
 
 	fmt.Printf("Unsupported command \"%s\"\n", command)
@@ -534,7 +539,7 @@ func dispatchCommand(input string) bool {
 }
 
 // commandPrintHelp prints the help/usage message for vgrep commands on stdout.
-func commandPrintHelp() bool {
+func (v *vgrep) commandPrintHelp() bool {
 	fmt.Printf("vgrep command help: command[context lines] [selectors]\n")
 	fmt.Printf("         selectors: '3' (single), '1,2,6' (multi), '1-8' (range)\n")
 	fmt.Printf("          commands: %srint, %show, %sontext, %sree, %selete, %siles, %suit, %s\n",
@@ -544,31 +549,31 @@ func commandPrintHelp() bool {
 }
 
 // commandPrintMatches prints all matches specified in indices using less(1) or
-// stdout in case Options.NoLess is specified. If indices is empty all matches
+// stdout in case v.options.NoLess is specified. If indices is empty all matches
 // are printed.
-func commandPrintMatches(indices []int) bool {
+func (v *vgrep) commandPrintMatches(indices []int) bool {
 	var toPrint [][]string
 	var err error
 
-	indices, err = checkIndices(indices)
+	indices, err = v.checkIndices(indices)
 	if err != nil {
 		fmt.Printf("%v\n", err)
 		return false
 	}
 
-	if !Options.NoHeader {
+	if !v.options.NoHeader {
 		toPrint = append(toPrint, []string{"Index", "File", "Line", "Content"})
 	}
 
 	for _, i := range indices {
-		toPrint = append(toPrint, Matches[i])
+		toPrint = append(toPrint, v.matches[i])
 	}
 
 	cw := colwriter.New(4)
-	cw.Headers = true && !Options.NoHeader
+	cw.Headers = true && !v.options.NoHeader
 	cw.Colors = []ansi.COLOR{ansi.YELLOW, ansi.BLUE, ansi.GREEN, ansi.DEFAULT}
 	cw.Padding = []colwriter.PaddingFunc{colwriter.PadLeft, colwriter.PadRight, colwriter.PadLeft, colwriter.PadNone}
-	cw.UseLess = !Options.NoLess
+	cw.UseLess = !v.options.NoLess
 	cw.Trim = []bool{false, false, false, true}
 
 	cw.Open()
@@ -580,11 +585,11 @@ func commandPrintMatches(indices []int) bool {
 
 // getContextLines return numLines context lines before and after the match at
 // the specified index including the matched line itself as []string.
-func getContextLines(index int, numLines int) [][]string {
+func (v *vgrep) getContextLines(index int, numLines int) [][]string {
 	var contextLines [][]string
 
-	path := Matches[index][1]
-	line, err := strconv.Atoi(Matches[index][2])
+	path := v.matches[index][1]
+	line, err := strconv.Atoi(v.matches[index][2])
 	if err != nil {
 		logrus.Warnf("Error converting '%s': %v", path, err)
 		return nil
@@ -602,7 +607,7 @@ func getContextLines(index int, numLines int) [][]string {
 	for scanner.Scan() {
 		counter++
 		if counter == line {
-			newContext := []string{strconv.Itoa(counter), Matches[index][3]}
+			newContext := []string{strconv.Itoa(counter), v.matches[index][3]}
 			contextLines = append(contextLines, newContext)
 		} else if (counter >= line-numLines) && (counter <= line+numLines) {
 			newContext := []string{strconv.Itoa(counter), scanner.Text()}
@@ -618,11 +623,11 @@ func getContextLines(index int, numLines int) [][]string {
 
 // commandPrintContextLines prints at most numLines context lines before and
 // after each match specified in indices.
-func commandPrintContextLines(indices []int, numLines int) bool {
+func (v *vgrep) commandPrintContextLines(indices []int, numLines int) bool {
 	var err error
 
 	logrus.Debugf("commandPrintContextLines(indices=[..], numlines=%d)", numLines)
-	indices, err = checkIndices(indices)
+	indices, err = v.checkIndices(indices)
 	if err != nil {
 		fmt.Printf("%v\n", err)
 		return false
@@ -631,11 +636,11 @@ func commandPrintContextLines(indices []int, numLines int) bool {
 	cw := colwriter.New(2)
 	cw.Colors = []ansi.COLOR{ansi.YELLOW, ansi.DEFAULT}
 	cw.Padding = []colwriter.PaddingFunc{colwriter.PadLeft, colwriter.PadNone}
-	cw.UseLess = !Options.NoLess
+	cw.UseLess = !v.options.NoLess
 	cw.Open()
 
 	for _, idx := range indices {
-		toPrint := getContextLines(idx, numLines)
+		toPrint := v.getContextLines(idx, numLines)
 		if toPrint == nil {
 			continue
 		}
@@ -643,7 +648,7 @@ func commandPrintContextLines(indices []int, numLines int) bool {
 		sep := fmt.Sprintf("%s %s %s ",
 			ansi.Color("---", ansi.YELLOW, false),
 			ansi.Color(strconv.Itoa(idx), ansi.YELLOW, false),
-			ansi.Color(Matches[idx][1], ansi.BLUE, false))
+			ansi.Color(v.matches[idx][1], ansi.BLUE, false))
 		for i := 0; i < 80-len(ansi.RemoveANSI(sep)); i++ {
 			sep += ansi.Color("---", ansi.YELLOW, false)
 		}
@@ -656,11 +661,11 @@ func commandPrintContextLines(indices []int, numLines int) bool {
 	return false
 }
 
-// commandDelete deletes all indices from Matches. It updates all other indices.
-func commandDelete(indices []int) bool {
+// commandDelete deletes all indices from v.matches. It updates all other indices.
+func (v *vgrep) commandDelete(indices []int) bool {
 	var err error
 
-	indices, err = checkIndices(indices)
+	indices, err = v.checkIndices(indices)
 	if err != nil {
 		fmt.Printf("%v\n", err)
 		return false
@@ -668,26 +673,26 @@ func commandDelete(indices []int) bool {
 
 	for offset, idx := range indices {
 		logrus.Debugf("Deleting index '%d'", idx)
-		for i := idx + 1; i < len(Matches); i++ {
-			Matches[i][0] = strconv.Itoa(i - 1)
+		for i := idx + 1; i < len(v.matches); i++ {
+			v.matches[i][0] = strconv.Itoa(i - 1)
 		}
 		index := idx + offset
-		Matches = append(Matches[:index], Matches[index+1:]...)
+		v.matches = append(v.matches[:index], v.matches[index+1:]...)
 	}
 
 	return false
 }
 
-// commandShow opens the environment's editor at Matches[index].
-func commandShow(index int) bool {
-	if _, err := checkIndices([]int{index}); err != nil {
+// commandShow opens the environment's editor at v.matches[index].
+func (v *vgrep) commandShow(index int) bool {
+	if _, err := v.checkIndices([]int{index}); err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		return false
 	}
 
-	editor := getEditor()
-	file := Matches[index][1]
-	lFlag := getEditorLineFlag() + Matches[index][2]
+	editor := v.getEditor()
+	file := v.matches[index][1]
+	lFlag := v.getEditorLineFlag() + v.matches[index][2]
 
 	logrus.Debugf("opening index %d via: %s %s %s", index, editor, file, lFlag)
 	cmd := exec.Command(editor, file, lFlag)
@@ -704,10 +709,10 @@ func commandShow(index int) bool {
 
 // commandListTree prints statistics about how many matches occur in which
 // directories in the search.
-func commandListTree(indices []int) bool {
+func (v *vgrep) commandListTree(indices []int) bool {
 	var err error
 
-	indices, err = checkIndices(indices)
+	indices, err = v.checkIndices(indices)
 	if err != nil {
 		fmt.Printf("%v\n", err)
 		return false
@@ -715,7 +720,7 @@ func commandListTree(indices []int) bool {
 
 	count := make(map[string]int)
 	for _, idx := range indices {
-		m := Matches[idx]
+		m := v.matches[idx]
 		split := strings.Split(m[1], "/")
 		if len(split) == 1 {
 			count["."]++
@@ -728,7 +733,7 @@ func commandListTree(indices []int) bool {
 	}
 
 	var toPrint [][]string
-	if !Options.NoHeader {
+	if !v.options.NoHeader {
 		toPrint = append(toPrint, []string{"Matches", "Directory"})
 	}
 
@@ -738,10 +743,10 @@ func commandListTree(indices []int) bool {
 	}
 
 	cw := colwriter.New(2)
-	cw.Headers = true && !Options.NoHeader
+	cw.Headers = true && !v.options.NoHeader
 	cw.Colors = []ansi.COLOR{ansi.YELLOW, ansi.GREEN}
 	cw.Padding = []colwriter.PaddingFunc{colwriter.PadLeft, colwriter.PadNone}
-	cw.UseLess = !Options.NoLess
+	cw.UseLess = !v.options.NoLess
 
 	cw.Open()
 	cw.Write(toPrint)
@@ -752,22 +757,22 @@ func commandListTree(indices []int) bool {
 
 // commandListFiles prints statistics about how many matches occur in which
 // files in the search.
-func commandListFiles(indices []int) bool {
+func (v *vgrep) commandListFiles(indices []int) bool {
 	var err error
 
-	if indices, err = checkIndices(indices); err != nil {
+	if indices, err = v.checkIndices(indices); err != nil {
 		fmt.Printf("%v\n", err)
 		return false
 	}
 
 	count := make(map[string]int)
 	for _, idx := range indices {
-		m := Matches[idx]
+		m := v.matches[idx]
 		count[m[1]]++
 	}
 
 	var toPrint [][]string
-	if !Options.NoHeader {
+	if !v.options.NoHeader {
 		toPrint = append(toPrint, []string{"Matches", "File"})
 	}
 
@@ -777,10 +782,10 @@ func commandListFiles(indices []int) bool {
 	}
 
 	cw := colwriter.New(2)
-	cw.Headers = true && !Options.NoHeader
+	cw.Headers = true && !v.options.NoHeader
 	cw.Colors = []ansi.COLOR{ansi.YELLOW, ansi.GREEN}
 	cw.Padding = []colwriter.PaddingFunc{colwriter.PadLeft, colwriter.PadNone}
-	cw.UseLess = !Options.NoLess
+	cw.UseLess = !v.options.NoLess
 
 	cw.Open()
 	cw.Write(toPrint)
@@ -791,7 +796,7 @@ func commandListFiles(indices []int) bool {
 
 // parseSelectors parses input for vgrep selectors and returns the corresonding
 // indices as a sorted []int.
-func parseSelectors(input string) ([]int, error) {
+func (v *vgrep) parseSelectors(input string) ([]int, error) {
 	indices := []int{}
 	selRgx := regexp.MustCompile("([^,]+)")
 
