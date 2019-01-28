@@ -38,8 +38,9 @@ type cliArgs struct {
 	Version     bool   `short:"v" long:"version" description:"Print version number"`
 }
 
+// vgrep stores state and the user-specified command-line arguments.
 type vgrep struct {
-	options cliArgs
+	cliArgs
 	matches [][]string
 	lock    lockfile.Lockfile
 	waiter  sync.WaitGroup
@@ -56,18 +57,18 @@ func main() {
 
 	// Unknown flags will be ignored and stored in args to further pass them
 	// to (git) grep.
-	parser := flags.NewParser(&v.options, flags.Default|flags.IgnoreUnknown)
+	parser := flags.NewParser(&v, flags.Default|flags.IgnoreUnknown)
 	args, err := parser.ParseArgs(os.Args[1:])
 	if err != nil {
 		os.Exit(1)
 	}
 
-	if v.options.Version {
+	if v.Version {
 		fmt.Println(version)
 		os.Exit(0)
 	}
 
-	if v.options.Debug {
+	if v.Debug {
 		logrus.SetLevel(logrus.DebugLevel)
 		logrus.Debug("log level set to debug")
 	}
@@ -102,7 +103,7 @@ func main() {
 
 	// Execute the specified command and/or jump directly into the
 	// interactive shell.
-	if v.options.Show != "" || v.options.Interactive {
+	if v.Show != "" || v.Interactive {
 		v.commandParse()
 		v.waiter.Wait()
 		os.Exit(0)
@@ -169,7 +170,7 @@ func (v *vgrep) grep(args []string) {
 
 	logrus.Debugf("grep(args=%s)", args)
 
-	usegit = v.insideGitTree() && !v.options.NoGit
+	usegit = v.insideGitTree() && !v.NoGit
 
 	if usegit {
 		env = "HOME="
@@ -400,7 +401,7 @@ func sortKeys(m map[string]int) []string {
 // user input matches a vgrep selector commandShow will be executed. It will
 // prompt the user for commands if we're running in interactive mode.
 func (v *vgrep) commandParse() {
-	input := v.options.Show
+	input := v.Show
 	logrus.Debugf("commandParse(input=%s)", input)
 
 	if indices, err := v.parseSelectors(input); err == nil && len(indices) > 0 {
@@ -428,7 +429,7 @@ func (v *vgrep) commandParse() {
 
 	for {
 		quit := v.dispatchCommand(input)
-		if quit || !v.options.Interactive {
+		if quit || !v.Interactive {
 			return
 		}
 		input = nextInput()
@@ -549,7 +550,7 @@ func (v *vgrep) commandPrintHelp() bool {
 }
 
 // commandPrintMatches prints all matches specified in indices using less(1) or
-// stdout in case v.options.NoLess is specified. If indices is empty all matches
+// stdout in case v.NoLess is specified. If indices is empty all matches
 // are printed.
 func (v *vgrep) commandPrintMatches(indices []int) bool {
 	var toPrint [][]string
@@ -561,7 +562,7 @@ func (v *vgrep) commandPrintMatches(indices []int) bool {
 		return false
 	}
 
-	if !v.options.NoHeader {
+	if !v.NoHeader {
 		toPrint = append(toPrint, []string{"Index", "File", "Line", "Content"})
 	}
 
@@ -570,10 +571,10 @@ func (v *vgrep) commandPrintMatches(indices []int) bool {
 	}
 
 	cw := colwriter.New(4)
-	cw.Headers = true && !v.options.NoHeader
+	cw.Headers = true && !v.NoHeader
 	cw.Colors = []ansi.COLOR{ansi.YELLOW, ansi.BLUE, ansi.GREEN, ansi.DEFAULT}
 	cw.Padding = []colwriter.PaddingFunc{colwriter.PadLeft, colwriter.PadRight, colwriter.PadLeft, colwriter.PadNone}
-	cw.UseLess = !v.options.NoLess
+	cw.UseLess = !v.NoLess
 	cw.Trim = []bool{false, false, false, true}
 
 	cw.Open()
@@ -636,7 +637,7 @@ func (v *vgrep) commandPrintContextLines(indices []int, numLines int) bool {
 	cw := colwriter.New(2)
 	cw.Colors = []ansi.COLOR{ansi.YELLOW, ansi.DEFAULT}
 	cw.Padding = []colwriter.PaddingFunc{colwriter.PadLeft, colwriter.PadNone}
-	cw.UseLess = !v.options.NoLess
+	cw.UseLess = !v.NoLess
 	cw.Open()
 
 	for _, idx := range indices {
@@ -733,7 +734,7 @@ func (v *vgrep) commandListTree(indices []int) bool {
 	}
 
 	var toPrint [][]string
-	if !v.options.NoHeader {
+	if !v.NoHeader {
 		toPrint = append(toPrint, []string{"Matches", "Directory"})
 	}
 
@@ -743,10 +744,10 @@ func (v *vgrep) commandListTree(indices []int) bool {
 	}
 
 	cw := colwriter.New(2)
-	cw.Headers = true && !v.options.NoHeader
+	cw.Headers = true && !v.NoHeader
 	cw.Colors = []ansi.COLOR{ansi.YELLOW, ansi.GREEN}
 	cw.Padding = []colwriter.PaddingFunc{colwriter.PadLeft, colwriter.PadNone}
-	cw.UseLess = !v.options.NoLess
+	cw.UseLess = !v.NoLess
 
 	cw.Open()
 	cw.Write(toPrint)
@@ -772,7 +773,7 @@ func (v *vgrep) commandListFiles(indices []int) bool {
 	}
 
 	var toPrint [][]string
-	if !v.options.NoHeader {
+	if !v.NoHeader {
 		toPrint = append(toPrint, []string{"Matches", "File"})
 	}
 
@@ -782,10 +783,10 @@ func (v *vgrep) commandListFiles(indices []int) bool {
 	}
 
 	cw := colwriter.New(2)
-	cw.Headers = true && !v.options.NoHeader
+	cw.Headers = true && !v.NoHeader
 	cw.Colors = []ansi.COLOR{ansi.YELLOW, ansi.GREEN}
 	cw.Padding = []colwriter.PaddingFunc{colwriter.PadLeft, colwriter.PadNone}
-	cw.UseLess = !v.options.NoLess
+	cw.UseLess = !v.NoLess
 
 	cw.Open()
 	cw.Write(toPrint)
