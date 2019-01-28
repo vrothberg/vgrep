@@ -82,7 +82,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	if len(args) == 0 {
+	haveToRunCommand := v.Show != "" || v.Interactive
+
+	// append additional args to the show command
+	if v.Show != "" && len(args) > 0 {
+		v.Show = fmt.Sprintf("%s %s", v.Show, strings.Join(args, ""))
+	}
+
+	if haveToRunCommand {
 		err = v.loadCache()
 		if err != nil {
 			if os.IsNotExist(err) {
@@ -103,7 +110,7 @@ func main() {
 
 	// Execute the specified command and/or jump directly into the
 	// interactive shell.
-	if v.Show != "" || v.Interactive {
+	if haveToRunCommand {
 		v.commandParse()
 		v.waiter.Wait()
 		os.Exit(0)
@@ -401,13 +408,6 @@ func sortKeys(m map[string]int) []string {
 func (v *vgrep) commandParse() {
 	input := v.Show
 
-	if indices, err := v.parseSelectors(input); err == nil && len(indices) > 0 {
-		input = "s "
-		for _, i := range indices {
-			input = fmt.Sprintf("%s%d,", input, i)
-		}
-	}
-
 	nextInput := func() string {
 		scanner := bufio.NewScanner(os.Stdin)
 		fmt.Print(ansi.Bold("Enter a vgrep command: "))
@@ -454,6 +454,7 @@ func (v *vgrep) checkIndices(indices []int) ([]int, error) {
 // dispatchCommand parses and dispatches the specified vgrep command in input.
 // The return value indicates if dispatching of commands should be stopped.
 func (v *vgrep) dispatchCommand(input string) bool {
+	logrus.Debugf("dispatchCommand(%s)", input)
 	if len(input) == 0 {
 		return false
 	}
