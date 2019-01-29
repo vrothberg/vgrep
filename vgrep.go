@@ -406,8 +406,6 @@ func sortKeys(m map[string]int) []string {
 // user input matches a vgrep selector commandShow will be executed. It will
 // prompt the user for commands if we're running in interactive mode.
 func (v *vgrep) commandParse() {
-	input := v.Show
-
 	nextInput := func() string {
 		scanner := bufio.NewScanner(os.Stdin)
 		fmt.Print(ansi.Bold("Enter a vgrep command: "))
@@ -424,12 +422,14 @@ func (v *vgrep) commandParse() {
 		return usrInp
 	}
 
-	for {
-		quit := v.dispatchCommand(input)
-		if quit || !v.Interactive {
-			return
-		}
+	input := v.Show
+	quit := false
+	if input != "" {
+		quit = v.dispatchCommand(input)
+	}
+	for !quit {
 		input = nextInput()
+		quit = v.dispatchCommand(input)
 	}
 }
 
@@ -456,7 +456,7 @@ func (v *vgrep) checkIndices(indices []int) ([]int, error) {
 func (v *vgrep) dispatchCommand(input string) bool {
 	logrus.Debugf("dispatchCommand(%s)", input)
 	if len(input) == 0 {
-		return false
+		return v.commandPrintHelp()
 	}
 	cmdRgx := regexp.MustCompile("^([a-z?]{1,})([\\d]+){0,1}([\\d , -]+){0,1}$")
 
