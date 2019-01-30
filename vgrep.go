@@ -427,7 +427,7 @@ func (v *vgrep) commandParse() {
 	if input != "" {
 		quit = v.dispatchCommand(input)
 	}
-	for !quit {
+	for !quit && v.Interactive {
 		input = nextInput()
 		quit = v.dispatchCommand(input)
 	}
