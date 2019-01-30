@@ -89,7 +89,7 @@ func main() {
 		v.Show = fmt.Sprintf("%s %s", v.Show, strings.Join(args, ""))
 	}
 
-	if haveToRunCommand {
+	if haveToRunCommand || len(args) == 0 {
 		err = v.loadCache()
 		if err != nil {
 			if os.IsNotExist(err) {
