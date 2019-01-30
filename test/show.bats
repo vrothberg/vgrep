@@ -3,7 +3,7 @@
 @test "Show print" {
 	run ./build/vgrep f
 	[ "$status" -eq 0 ]
-	run ./build/vgrep -s "p 10"
+	run ./build/vgrep -s p 10
 	[ "$status" -eq 0 ]
 	[[ ${lines[0]} =~ "Index" ]]
 	[[ ${lines[0]} =~ "File" ]]
@@ -15,7 +15,7 @@
 @test "Show context with selectors" {
 	run ./build/vgrep f
 	[ "$status" -eq 0 ]
-	run ./build/vgrep -s "c 10-15"
+	run ./build/vgrep -s c 10-15
 	[ "$status" -eq 0 ]
 	[[ ${lines[0]} =~ "10" ]]
 }
@@ -23,7 +23,7 @@
 @test "Show tree" {
 	run ./build/vgrep f
 	[ "$status" -eq 0 ]
-	run ./build/vgrep -st
+	run ./build/vgrep -s t
 	[ "$status" -eq 0 ]
 	[[ ${lines[0]} =~ "Matches" ]]
 	[[ ${lines[0]} =~ "Directory" ]]
@@ -43,7 +43,9 @@
 	run ./build/vgrep f
 	[ "$status" -eq 0 ]
 	line2="${lines[2]}"
-	run ./build/vgrep -s "d0"
+	run ./build/vgrep -s d0
+	[ "$status" -eq 0 ]
+	run ./build/vgrep -s d0,1-10,21,22,50
 	[ "$status" -eq 0 ]
 }
 
@@ -54,4 +56,7 @@
 	[ "$status" -eq 0 ]
 	[[ ${lines[0]} =~ "vgrep command help: command[context lines] [selectors]" ]]
 	[[ ${lines[1]} =~ "selectors: '3' (single), '1,2,6' (multi), '1-8' (range)" ]]
+	run ./build/vgrep -s ?
+	[ "$status" -eq 0 ]
+	[[ ${lines[0]} =~ "vgrep command help: command[context lines] [selectors]" ]]
 }
