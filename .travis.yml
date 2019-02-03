@@ -5,8 +5,11 @@ go:
 
 before_script:
         - go get golang.org/x/lint/golint
+        - go get github.com/LK4D4/vndr
 
 script:
         - make check
+        - make vendor
+        - ./hack/tree_status.sh
         - make build
         - make test
