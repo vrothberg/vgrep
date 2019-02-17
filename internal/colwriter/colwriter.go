@@ -86,7 +86,10 @@ func (cw *ColWriter) Open() {
 			panic(fmt.Sprintf("Could not execute less:%s\n", err))
 		}
 		cw.writer = bufio.NewWriter(cw.pipe)
-		cw.cmd.Start()
+		err = cw.cmd.Start()
+		if err != nil {
+			panic(fmt.Sprintf("Could not execute less:%s\n", err))
+		}
 	}
 	cw.opened = true
 }
@@ -99,7 +102,10 @@ func (cw *ColWriter) Close() {
 	cw.writer.Flush()
 	if cw.UseLess {
 		cw.pipe.Close()
-		cw.cmd.Wait()
+		err := cw.cmd.Wait()
+		if err != nil {
+			panic(fmt.Sprintf("Could not execute less:%s\n", err))
+		}
 	}
 	cw.opened = false
 }
