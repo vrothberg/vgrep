@@ -34,6 +34,8 @@ check: $(GO_SRC)
 	test -z "$$(gofmt -s -l . | grep -vE 'vendor/' | tee /dev/stderr)"
 	@which golint >/dev/null 2>/dev/null|| (echo "ERROR: golint not found." && false)
 	test -z "$$(golint $(PROJECT)/...  | grep -vE 'vendor/' | tee /dev/stderr)"
+	@which golangci-lint >/dev/null 2>/dev/null|| (echo "ERROR: golangci-lint not found." && false)
+	test -z "$$(golangci-lint run --disable=errcheck)"
 	@go doc cmd/vet >/dev/null 2>/dev/null|| (echo "ERROR: go vet not found." && false)
 	test -z "$$($(GO) vet $$($(GO) list $(PROJECT)/...) 2>&1 | tee /dev/stderr)"
 

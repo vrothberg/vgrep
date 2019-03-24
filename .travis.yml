@@ -4,7 +4,8 @@ go:
         - tip
 
 before_script:
-        - go get golang.org/x/lint/golint
+        - go get -u golang.org/x/lint/golint
+        - go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
 
 script:
         - make check
