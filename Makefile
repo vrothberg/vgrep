@@ -46,7 +46,9 @@ test-integration:
 
 .PHONY: vendor
 vendor:
-	vndr
+	GO111MODULE=on go mod tidy
+	GO111MODULE=on go mod vendor
+	GO111MODULE=on go mod verify
 
 .PHONY: install
 install:
