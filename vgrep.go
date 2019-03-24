@@ -460,12 +460,12 @@ func (v *vgrep) dispatchCommand(input string) bool {
 	}
 
 	// normalize selector-only inputs (e.g., "1,2,3,5-10") to the show cmd
-	numRgx := regexp.MustCompile(`^([\\d]+){0,1}([\\d , -]+){0,1}$`)
+	numRgx := regexp.MustCompile(`^([\d]+){0,1}([\d , -]+){0,1}$`)
 	if numRgx.MatchString(input) {
 		input = "s " + input
 	}
 
-	cmdRgx := regexp.MustCompile(`^([a-z?]{1,})([\\d]+){0,1}([\\d , -]+){0,1}$`)
+	cmdRgx := regexp.MustCompile(`^([a-z?]{1,})([\d]+){0,1}([\d , -]+){0,1}$`)
 	if !cmdRgx.MatchString(input) {
 		fmt.Printf("%q doesn't match format %q\n", input, "command[context lines] [selectors]")
 		return false
