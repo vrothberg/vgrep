@@ -52,6 +52,10 @@ vendor:
 	GO111MODULE=on go mod vendor
 	GO111MODULE=on go mod verify
 
+.install.tools:
+	go get -u golang.org/x/lint/golint
+	go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
+
 .PHONY: install
 install:
 	sudo install -D -m755 $(BUILD_DIR)/$(NAME) $(BIN_DIR)
