@@ -4,10 +4,7 @@ github.com/jessevdk/go-flags
 github.com/konsorten/go-windows-terminal-sequences
 # github.com/nightlyone/lockfile v0.0.0-20180618180623-0ad87eef1443
 github.com/nightlyone/lockfile
-# github.com/sirupsen/logrus v1.4.0
+# github.com/sirupsen/logrus v1.4.2
 github.com/sirupsen/logrus
-# golang.org/x/crypto v0.0.0-20190320223903-b7391e95e576
-golang.org/x/crypto/ssh/terminal
-# golang.org/x/sys v0.0.0-20190322080309-f49334f85ddc
+# golang.org/x/sys v0.0.0-20190422165155-953cdadca894
 golang.org/x/sys/unix
-golang.org/x/sys/windows
