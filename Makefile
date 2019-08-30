@@ -1,3 +1,5 @@
+export GOPROXY=https://proxy.golang.org
+
 SHELL= /bin/bash
 GO ?= go
 BUILD_DIR := ./build
