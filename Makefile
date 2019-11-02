@@ -12,15 +12,21 @@ CONTAINER_RUNTIME := $(shell command -v podman 2> /dev/null || echo docker)
 
 GO_SRC=$(shell find . -name \*.go)
 
+GO_BUILD=$(GO) build
+# Go module support: set `-mod=vendor` to use the vendored sources
+ifeq ($(shell go help mod >/dev/null 2>&1 && echo true), true)
+	GO_BUILD=GO111MODULE=on $(GO) build -mod=vendor
+endif
+
 all: check build
 
 .PHONY: build
 build: $(GO_SRC)
-	 $(GO) build -buildmode=pie -o $(BUILD_DIR)/$(NAME) -ldflags "-s -w -X main.version=${VERSION}-$(COMMIT)-dev"
+	$(GO_BUILD) -buildmode=pie -o $(BUILD_DIR)/$(NAME) -ldflags "-s -w -X main.version=${VERSION}-$(COMMIT)-dev"
 
 .PHONY: release
 release: $(GO_SRC)
-	 $(GO) build -buildmode=pie -o $(BUILD_DIR)/$(NAME) -ldflags "-s -w -X main.version=${VERSION}"
+	$(GO_BUILD) -buildmode=pie -o $(BUILD_DIR)/$(NAME) -ldflags "-s -w -X main.version=${VERSION}"
 
 .PHONY: clean
 clean:
@@ -32,14 +38,8 @@ deps:
 
 .PHONY: check
 check: $(GO_SRC)
-	@which gofmt >/dev/null 2>/dev/null || (echo "ERROR: gofmt not found." && false)
-	test -z "$$(gofmt -s -l . | grep -vE 'vendor/' | tee /dev/stderr)"
-	@which golint >/dev/null 2>/dev/null|| (echo "ERROR: golint not found." && false)
-	test -z "$$(golint $(PROJECT)/...  | grep -vE 'vendor/' | tee /dev/stderr)"
 	@which golangci-lint >/dev/null 2>/dev/null|| (echo "ERROR: golangci-lint not found." && false)
 	test -z "$$(golangci-lint run --disable=errcheck)"
-	@go doc cmd/vet >/dev/null 2>/dev/null|| (echo "ERROR: go vet not found." && false)
-	test -z "$$($(GO) vet $$($(GO) list $(PROJECT)/...) 2>&1 | tee /dev/stderr)"
 
 .PHONY: test
 test: test-integration
@@ -55,8 +55,7 @@ vendor:
 	GO111MODULE=on go mod verify
 
 .install.tools:
-	go get -u golang.org/x/lint/golint
-	go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
+	GO111MODULE=off go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
 
 .PHONY: install
 install:
