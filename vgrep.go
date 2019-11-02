@@ -1,6 +1,6 @@
 package main
 
-// (c) 2015-2019 Valentin Rothberg <valentinrothberg@gmail.com>
+// (c) 2015-2019 Valentin Rothberg <valentin@rothberg.email>
 //
 // Licensed under the terms of the GNU GPL License version 3.
 
