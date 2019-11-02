@@ -1,6 +1,6 @@
 ![vgrep logo](logo.png)
 
-[![Build Status](https://travis-ci.org/vrothberg/vgrep.svg?branch=master)](https://travis-ci.org/vrothberg/vgrep)
+[![Build Status](https://api.cirrus-ci.com/github/vrothberg/vgrep.svg)](https://cirrus-ci.com/github/vrothberg/vgrep)
 
 **vgrep** is a command-line tool to search textual patterns in directories. It serves as a front-end to grep and git-grep and allows to open the indexed matching lines in a user-specified editor.  vgrep is inspired by the ancient **cgvg** scripts but extended to perform further operations such as listing statistics of files and directory trees or showing the context lines before and after the matches.
 

@@ -1,0 +1,16 @@
+container:
+  image: golang:1.13
+
+env:
+  GOPROXY: https://proxy.golang.org
+
+build_and_test_task:
+  build_and_test_script:
+    - apt-get update
+    - apt-get install bats less
+    - make .install.tools
+    - make check
+    - make vendor
+    - ./hack/tree_status.sh
+    - make build
+    - make test
