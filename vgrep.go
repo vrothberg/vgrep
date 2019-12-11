@@ -654,7 +654,7 @@ func (v *vgrep) commandPrintContextLines(indices []int, numLines int) bool {
 	}
 
 	cw := colwriter.New(2)
-	cw.Colors = []ansi.COLOR{ansi.YELLOW, ansi.DEFAULT}
+	cw.Colors = []ansi.COLOR{ansi.MAGENTA, ansi.DEFAULT}
 	cw.Padding = []colwriter.PaddingFunc{colwriter.PadLeft, colwriter.PadNone}
 	cw.UseLess = !v.NoLess
 	cw.Open()
@@ -666,11 +666,11 @@ func (v *vgrep) commandPrintContextLines(indices []int, numLines int) bool {
 		}
 
 		sep := fmt.Sprintf("%s %s %s ",
-			ansi.Color("---", ansi.YELLOW, false),
-			ansi.Color(strconv.Itoa(idx), ansi.YELLOW, false),
+			ansi.Color("---", ansi.MAGENTA, false),
+			ansi.Color(strconv.Itoa(idx), ansi.MAGENTA, false),
 			ansi.Color(v.matches[idx][1], ansi.BLUE, false))
 		for i := 0; i < 80-len(ansi.RemoveANSI(sep)); i++ {
-			sep += ansi.Color("---", ansi.YELLOW, false)
+			sep += ansi.Color("---", ansi.MAGENTA, false)
 		}
 		sep += "\n"
 		cw.WriteString(sep)
@@ -764,7 +764,7 @@ func (v *vgrep) commandListTree(indices []int) bool {
 
 	cw := colwriter.New(2)
 	cw.Headers = true && !v.NoHeader
-	cw.Colors = []ansi.COLOR{ansi.YELLOW, ansi.GREEN}
+	cw.Colors = []ansi.COLOR{ansi.MAGENTA, ansi.GREEN}
 	cw.Padding = []colwriter.PaddingFunc{colwriter.PadLeft, colwriter.PadNone}
 	cw.UseLess = !v.NoLess
 
@@ -803,7 +803,7 @@ func (v *vgrep) commandListFiles(indices []int) bool {
 
 	cw := colwriter.New(2)
 	cw.Headers = true && !v.NoHeader
-	cw.Colors = []ansi.COLOR{ansi.YELLOW, ansi.GREEN}
+	cw.Colors = []ansi.COLOR{ansi.MAGENTA, ansi.GREEN}
 	cw.Padding = []colwriter.PaddingFunc{colwriter.PadLeft, colwriter.PadNone}
 	cw.UseLess = !v.NoLess
 
