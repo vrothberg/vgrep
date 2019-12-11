@@ -591,7 +591,7 @@ func (v *vgrep) commandPrintMatches(indices []int) bool {
 
 	cw := colwriter.New(4)
 	cw.Headers = true && !v.NoHeader
-	cw.Colors = []ansi.COLOR{ansi.YELLOW, ansi.BLUE, ansi.GREEN, ansi.DEFAULT}
+	cw.Colors = []ansi.COLOR{ansi.MAGENTA, ansi.BLUE, ansi.GREEN, ansi.DEFAULT}
 	cw.Padding = []colwriter.PaddingFunc{colwriter.PadLeft, colwriter.PadRight, colwriter.PadLeft, colwriter.PadNone}
 	cw.UseLess = !v.NoLess
 	cw.Trim = []bool{false, false, false, true}
