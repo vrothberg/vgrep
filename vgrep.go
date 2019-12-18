@@ -331,7 +331,11 @@ func (v *vgrep) cacheWriterHelper() error {
 	if err := v.acquireLock(); err != nil {
 		return fmt.Errorf("error acquiring lock file: %v", err)
 	}
-	defer v.lock.Unlock()
+	defer func() {
+		if err := v.lock.Unlock(); err != nil {
+			panic(fmt.Sprintf("Error releasing lock file: %v", err))
+		}
+	}()
 
 	file, err := os.OpenFile(cache, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
 	if err != nil {
@@ -369,7 +373,12 @@ func (v *vgrep) loadCache() error {
 	if err := v.acquireLock(); err != nil {
 		return err
 	}
-	defer v.lock.Unlock()
+	defer func() {
+		if err := v.lock.Unlock(); err != nil {
+		        panic(fmt.Sprintf("Error releasing lock file: %v", err))
+		}
+	}()
+
 
 	file, err := ioutil.ReadFile(cache)
 	if err != nil {

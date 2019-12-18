@@ -39,7 +39,7 @@ deps:
 .PHONY: check
 check: $(GO_SRC)
 	@which golangci-lint >/dev/null 2>/dev/null|| (echo "ERROR: golangci-lint not found." && false)
-	test -z "$$(golangci-lint run --disable=errcheck)"
+	test -z "$$(golangci-lint run)"
 
 .PHONY: test
 test: test-integration
