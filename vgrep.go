@@ -318,9 +318,9 @@ func (v *vgrep) cacheWriterHelper() error {
 	logrus.Debug("cacheWriterHelper(): start")
 	defer logrus.Debug("cacheWriterHelper(): end")
 
-	workDir, err := os.Getwd()
+	workDir, err := resolvedWorkdir()
 	if err != nil {
-		return fmt.Errorf("error getting working dir: %v", err)
+		return err
 	}
 
 	cache, err := v.cachePath()
@@ -360,6 +360,15 @@ func (v *vgrep) cacheWriterHelper() error {
 	return file.Close()
 }
 
+// resolvedWorkdir returns the path to current working directory (fully evaluated in case it's a symlink).
+func resolvedWorkdir() (string, error) {
+	workDir, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("error getting working dir: %v", err)
+	}
+	return filepath.EvalSymlinks(workDir)
+}
+
 // loadCache loads the user-specific vgrep cache.
 func (v *vgrep) loadCache() error {
 	logrus.Debug("loadCache(): start")
@@ -375,10 +384,9 @@ func (v *vgrep) loadCache() error {
 	}
 	defer func() {
 		if err := v.lock.Unlock(); err != nil {
-		        panic(fmt.Sprintf("Error releasing lock file: %v", err))
+			panic(fmt.Sprintf("Error releasing lock file: %v", err))
 		}
 	}()
-
 
 	file, err := ioutil.ReadFile(cache)
 	if err != nil {
@@ -394,9 +402,9 @@ func (v *vgrep) loadCache() error {
 	if length := len(v.matches); length > 0 {
 		oldWorkDir := v.matches[length-1][0]
 		v.matches = v.matches[:len(v.matches)-1]
-		workDir, err := os.Getwd()
+		workDir, err := resolvedWorkdir()
 		if err != nil {
-			return fmt.Errorf("error getting working dir: %v", err)
+			return err
 		}
 		if workDir != oldWorkDir {
 			return fmt.Errorf("please cd into %s to use old cache", oldWorkDir)
