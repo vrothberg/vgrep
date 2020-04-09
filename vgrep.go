@@ -14,6 +14,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -247,8 +248,15 @@ func (v *vgrep) getEditorLineFlag() string {
 
 // Create the lock file to guard against concurrent processes
 func (v *vgrep) makeLockFile() error {
+
 	var err error
-	lockdir := filepath.Join(os.Getenv("HOME"), ".local/share/vgrep")
+	var lockdir string
+
+	if runtime.GOOS == "windows" {
+		lockdir = filepath.Join(os.Getenv("LOCALAPPDATA"), "vgrep")
+	} else {
+		lockdir = filepath.Join(os.Getenv("HOME"), ".local/share/vgrep")
+	}
 	exists := true
 
 	if _, err := os.Stat(lockdir); err != nil {
@@ -283,7 +291,14 @@ func (v *vgrep) acquireLock() error {
 
 // cachePath returns the path to the user-specific vgrep cache.
 func (v *vgrep) cachePath() (string, error) {
-	cache := filepath.Join(os.Getenv("HOME"), ".cache/")
+
+	var cache string
+
+	if runtime.GOOS == "windows" {
+		cache = filepath.Join(os.Getenv("LOCALAPPDATA"), "vgrep-cache/")
+	} else {
+		cache = filepath.Join(os.Getenv("HOME"), ".cache/")
+	}
 	exists := true
 
 	if _, err := os.Stat(cache); err != nil {
