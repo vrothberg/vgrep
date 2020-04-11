@@ -31,7 +31,7 @@ import (
 // cliArgs passed to go-flags
 type cliArgs struct {
 	Debug       bool   `short:"d" long:"debug" description:"Verbose debug logging"`
-	Interactive bool   `short:"i" long:"interactive" description:"Enter interactive shell"`
+	Interactive bool   `long:"interactive" description:"Enter interactive shell"`
 	NoGit       bool   `long:"no-git" description:"Use grep instead of git-grep"`
 	NoHeader    bool   `long:"no-header" description:"Do not print pretty headers"`
 	NoLess      bool   `long:"no-less" description:"Use stdout instead of less"`
