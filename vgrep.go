@@ -352,7 +352,7 @@ func (v *vgrep) cacheWriterHelper() error {
 		}
 	}()
 
-	file, err := os.OpenFile(cache, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
+	file, err := os.OpenFile(cache, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		return err
 	}
