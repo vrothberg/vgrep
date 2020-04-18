@@ -18,6 +18,18 @@
 	[[ ${lines[0]} =~ "0" ]]
 }
 
+@test "Simple search and --no-ripgrep" {
+	run ./build/vgrep --no-ripgrep f
+	[ "$status" -eq 0 ]
+	[[ ${lines[0]} =~ "0" ]]
+}
+
+@test "Simple search and --no-git --no-ripgrep" {
+	run ./build/vgrep --no-git --no-ripgrep f
+	[ "$status" -eq 0 ]
+	[[ ${lines[0]} =~ "0" ]]
+}
+
 @test "Simple search and --no-header" {
 	run ./build/vgrep --no-header f
 	[ "$status" -eq 0 ]
