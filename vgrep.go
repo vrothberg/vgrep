@@ -33,6 +33,7 @@ type cliArgs struct {
 	Debug       bool   `short:"d" long:"debug" description:"Verbose debug logging"`
 	Interactive bool   `long:"interactive" description:"Enter interactive shell"`
 	NoGit       bool   `long:"no-git" description:"Use grep instead of git-grep"`
+	NoRipgrep   bool   `long:"no-ripgrep" description:"Do not use ripgrep"`
 	NoHeader    bool   `long:"no-header" description:"Do not print pretty headers"`
 	NoLess      bool   `long:"no-less" description:"Use stdout instead of less"`
 	Show        string `short:"s" long:"show" description:"Show specified matches or open shell" value-name:"SELECTORS"`
@@ -170,6 +171,22 @@ func (v *vgrep) insideGitTree() bool {
 	return inside
 }
 
+// ripgrepInstalled returns true if ripgrep is installed
+func (v *vgrep) ripgrepInstalled() bool {
+	out, err := exec.LookPath("rg")
+	if err != nil {
+		logrus.Debug("error checking if ripgrep is installed")
+	}
+	installed := false
+
+	if len(out) > 0 {
+		installed = true
+	}
+
+	logrus.Debugf("ripgrepInstalled() -> %v", installed)
+	return installed
+}
+
 // isVscode checks if the terminal is running inside of vscode.
 func isVscode() bool {
 	return os.Getenv("TERM_PROGRAM") == "vscode"
@@ -181,9 +198,17 @@ func (v *vgrep) grep(args []string) {
 	var usegit bool
 	var env string
 
+	useripgrep := v.ripgrepInstalled() && !v.NoRipgrep
 	usegit = v.insideGitTree() && !v.NoGit
 
-	if usegit {
+	if useripgrep {
+		cmd = []string{
+			"rg", "-0", "--colors=path:none", "--colors=line:none",
+			"--color=always", "--no-heading", "--line-number",
+		}
+		cmd = append(cmd, args...)
+		cmd = append(cmd, ".")
+	} else if usegit {
 		env = "HOME="
 		cmd = []string{
 			"git", "-c", "color.grep.match=red bold",
@@ -205,7 +230,7 @@ func (v *vgrep) grep(args []string) {
 	v.matches = make([][]string, len(output))
 
 	for i, m := range output {
-		file, line, content := v.splitMatch(m, usegit)
+		file, line, content := v.splitMatch(m, usegit, useripgrep)
 		v.matches[i] = make([]string, 4)
 		v.matches[i][0] = strconv.Itoa(i)
 		v.matches[i][1] = file
@@ -218,9 +243,13 @@ func (v *vgrep) grep(args []string) {
 
 // splitMatch splits match into its file, line and content.  The format of
 // match varies depending if it has been produced by grep or git-grep.
-func (v *vgrep) splitMatch(match string, gitgrep bool) (file, line, content string) {
+func (v *vgrep) splitMatch(match string, gitgrep bool, ripgrep bool) (file, line, content string) {
+	if ripgrep {
+		// remove default color ansi escape codes from ripgrep's output
+		match = strings.Replace(match, "\x1b[0m", "", 4)
+	}
 	spl := bytes.SplitN([]byte(match), []byte{0}, 3)
-	if gitgrep {
+	if gitgrep && !ripgrep {
 		return string(spl[0]), string(spl[1]), string(spl[2])
 	}
 	// the 2nd separator of grep is ":"

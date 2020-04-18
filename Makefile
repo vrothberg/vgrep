@@ -46,7 +46,7 @@ test: test-integration
 
 .PHONY: test-integration
 test-integration:
-	bats test/*.bats
+	export PATH=./test/bin:$$PATH; bats test/*.bats
 
 .PHONY: vendor
 vendor:
@@ -56,6 +56,8 @@ vendor:
 
 .install.tools:
 	GO111MODULE=off go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
+	curl -L https://github.com/BurntSushi/ripgrep/releases/download/12.0.1/ripgrep-12.0.1-x86_64-unknown-linux-musl.tar.gz | tar xz
+	mkdir -p ./test/bin && mv ripgrep-12.0.1-x86_64-unknown-linux-musl/rg ./test/bin/ && rm -rf ripgrep-12.0.1-x86_64-unknown-linux-musl
 
 .PHONY: install
 install:
