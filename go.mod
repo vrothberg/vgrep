@@ -4,6 +4,7 @@ require (
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
+	github.com/manifoldco/promptui v0.7.0 // indirect
 	github.com/nightlyone/lockfile v0.0.0-20180618180623-0ad87eef1443
 	github.com/sirupsen/logrus v1.5.0
 	github.com/stretchr/testify v1.4.0 // indirect
