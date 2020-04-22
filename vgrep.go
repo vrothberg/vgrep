@@ -26,6 +26,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/vrothberg/vgrep/internal/ansi"
 	"github.com/vrothberg/vgrep/internal/colwriter"
+	"github.com/manifoldco/promptui"
 )
 
 // cliArgs passed to go-flags
@@ -61,6 +62,8 @@ func main() {
 	// to (git) grep.
 	parser := flags.NewParser(&v, flags.Default|flags.IgnoreUnknown)
 	args, err := parser.ParseArgs(os.Args[1:])
+	searchWord := args[0]
+
 	if err != nil {
 		os.Exit(1)
 	}
@@ -120,7 +123,7 @@ func main() {
 
 	// Last resort, print all matches.
 	if len(v.matches) > 0 {
-		v.commandPrintMatches([]int{})
+		v.commandPrintMatches([]int{}, searchWord)
 	}
 
 	v.waiter.Wait()
@@ -584,7 +587,7 @@ func (v *vgrep) dispatchCommand(input string) bool {
 	}
 
 	if command == "p" || command == "print" {
-		return v.commandPrintMatches(indices)
+		return v.commandPrintMatches(indices, input)
 	}
 
 	if command == "q" || command == "quit" {
@@ -623,8 +626,8 @@ func (v *vgrep) commandPrintHelp() bool {
 // commandPrintMatches prints all matches specified in indices using less(1) or
 // stdout in case v.NoLess is specified. If indices is empty all matches
 // are printed.
-func (v *vgrep) commandPrintMatches(indices []int) bool {
-	var toPrint [][]string
+func (v *vgrep) commandPrintMatches(indices []int, searchWord string) bool {
+	var toPrint []string
 	var err error
 
 	indices, err = v.checkIndices(indices)
@@ -633,9 +636,44 @@ func (v *vgrep) commandPrintMatches(indices []int) bool {
 		return false
 	}
 
-	if !v.NoHeader {
-		toPrint = append(toPrint, []string{"Index", "File", "Line", "Content"})
+	//if !v.NoHeader {
+	//	toPrint = append(toPrint, []string{"Index", "File", "Line", "Content"})
+	//}
+
+	toPrint = v.createPrintMessages(indices, searchWord)
+
+	prompt := promptui.Select{
+		Label: "Search Results",
+		Items: toPrint,
+		Size:  5,
 	}
+
+	_, result, err := prompt.Run()
+
+	if err != nil {
+		fmt.Printf("Prompt failed %v\n", err)
+	}
+
+	selectedNum, _ := strconv.Atoi(strings.Split(result, " ")[0])
+
+	v.commandShow(selectedNum)
+
+	//cw := colwriter.New(4)
+	//cw.Headers = true && !v.NoHeader
+	//cw.Colors = []ansi.COLOR{ansi.MAGENTA, ansi.BLUE, ansi.GREEN, ansi.DEFAULT}
+	//cw.Padding = []colwriter.PaddingFunc{colwriter.PadLeft, colwriter.PadRight, colwriter.PadLeft, colwriter.PadNone}
+	//cw.UseLess = !v.NoLess
+	//cw.Trim = []bool{false, false, false, true}
+	//
+	//cw.Open()
+	//cw.Write(toPrint)
+	//cw.Close()
+
+	return false
+}
+
+func (v *vgrep) createPrintMessages(indices []int, searchWord string) []string {
+	var toPrint []string
 
 	isVscode := isVscode()
 	for _, i := range indices {
@@ -644,24 +682,26 @@ func (v *vgrep) commandPrintMatches(indices []int) bool {
 			// file path, so we can quick jump to the specific location.  Note
 			// that dancing around with the indexes below is intentional - ugly
 			// but fast.
-			toPrint = append(toPrint, []string{v.matches[i][0], v.matches[i][1] + ":" + v.matches[i][2], v.matches[i][2], v.matches[i][3]})
+			//toPrint = append(toPrint, []string{v.matches[i][0], v.matches[i][1] + ":" + v.matches[i][2], v.matches[i][2], v.matches[i][3]})
 		} else {
-			toPrint = append(toPrint, v.matches[i])
+			var index, file, line, content = v.matches[i][0], v.matches[i][1], v.matches[i][2], v.matches[i][3]
+			var DIFF = 20
+			re := regexp.MustCompile(searchWord)
+			matchLocations := re.FindAllIndex([]byte(v.matches[i][3]), -1)
+			for _, location := range matchLocations {
+				var before, after = location[0]-DIFF, location[1]+DIFF
+				if location[0]-DIFF < 0 {
+					before = 0
+				}
+				if location[1]+DIFF >= len(content) {
+					after = len(content) - 1
+				}
+				limitedContent := content[before:after]
+				toPrint = append(toPrint, index+" "+file+":"+line+" "+limitedContent)
+			}
 		}
 	}
-
-	cw := colwriter.New(4)
-	cw.Headers = true && !v.NoHeader
-	cw.Colors = []ansi.COLOR{ansi.MAGENTA, ansi.BLUE, ansi.GREEN, ansi.DEFAULT}
-	cw.Padding = []colwriter.PaddingFunc{colwriter.PadLeft, colwriter.PadRight, colwriter.PadLeft, colwriter.PadNone}
-	cw.UseLess = !v.NoLess
-	cw.Trim = []bool{false, false, false, true}
-
-	cw.Open()
-	cw.Write(toPrint)
-	cw.Close()
-
-	return false
+	return toPrint
 }
 
 // getContextLines return numLines context lines before and after the match at
