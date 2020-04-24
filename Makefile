@@ -39,8 +39,7 @@ deps:
 
 .PHONY: check
 check: $(GO_SRC)
-	@which golangci-lint >/dev/null 2>/dev/null|| (echo "ERROR: golangci-lint not found." && false)
-	test -z "$$(golangci-lint run)"
+	${BUILD_DIR}/golangci-lint run
 
 .PHONY: test
 test: test-integration
@@ -56,7 +55,12 @@ vendor:
 	GO111MODULE=on go mod verify
 
 .install.tools:
-	GO111MODULE=off go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
+	export \
+		VERSION=v1.23.8 \
+		URL=https://raw.githubusercontent.com/golangci/golangci-lint \
+		BINDIR=${BUILD_DIR} && \
+	curl -sfL $$URL/$$VERSION/install.sh | sh -s $$VERSION
+
 	curl -L https://github.com/BurntSushi/ripgrep/releases/download/12.0.1/ripgrep-12.0.1-x86_64-unknown-linux-musl.tar.gz | tar xz
 	mkdir -p ./test/bin && mv ripgrep-12.0.1-x86_64-unknown-linux-musl/rg ./test/bin/ && rm -rf ripgrep-12.0.1-x86_64-unknown-linux-musl
 
