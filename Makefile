@@ -3,7 +3,8 @@ export GOPROXY=https://proxy.golang.org
 SHELL= /bin/bash
 GO ?= go
 BUILD_DIR := ./build
-BIN_DIR := /usr/local/bin
+PREFIX := /usr/local
+BIN_DIR := $(PREFIX)/bin/
 NAME := vgrep
 PROJECT := github.com/vrothberg/vgrep
 VERSION := $(shell cat ./VERSION)
@@ -61,11 +62,11 @@ vendor:
 
 .PHONY: install
 install:
-	sudo install -D -m755 $(BUILD_DIR)/$(NAME) $(BIN_DIR)
+	install -D -m755 $(BUILD_DIR)/$(NAME) $(BIN_DIR)
 
 .PHONY: uninstall
 uninstall:
-	sudo rm $(BIN_DIR)/$(NAME)
+	rm $(BIN_DIR)/$(NAME)
 
 # CONTAINER MAKE TARGETS
 
