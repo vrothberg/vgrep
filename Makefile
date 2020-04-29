@@ -66,7 +66,8 @@ vendor:
 
 .PHONY: install
 install:
-	install -D -m755 $(BUILD_DIR)/$(NAME) $(BIN_DIR)
+	cp $(BUILD_DIR)/$(NAME) $(BIN_DIR)
+	chmod 755 $(BIN_DIR)$(NAME)
 
 .PHONY: uninstall
 uninstall:
