@@ -6,5 +6,6 @@ github.com/konsorten/go-windows-terminal-sequences
 github.com/nightlyone/lockfile
 # github.com/sirupsen/logrus v1.6.0
 github.com/sirupsen/logrus
-# golang.org/x/sys v0.0.0-20200420163511-1957bb5e6d1f
+# golang.org/x/sys v0.0.0-20200509044756-6aff5f38e54f
+golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
