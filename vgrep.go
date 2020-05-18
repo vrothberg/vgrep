@@ -187,6 +187,16 @@ func (v *vgrep) ripgrepInstalled() bool {
 	return installed
 }
 
+func (v *vgrep) getGrepType() (grepType string) {
+	out, _ := v.runCommand([]string{"grep", "--version"}, "")
+	versionString := out[0]
+	// versionString = "grep (BSD grep) 2.5.1-FreeBSD"
+	versionRegex := regexp.MustCompile("\\(([[:alpha:]]+) grep\\)")
+	// versionRegex matches to ["(BSD grep)", "BSD"], return "BSD"
+	grepType = versionRegex.FindStringSubmatch(versionString)[1]
+	return
+}
+
 // isVscode checks if the terminal is running inside of vscode.
 func isVscode() bool {
 	return os.Getenv("TERM_PROGRAM") == "vscode"
@@ -197,10 +207,10 @@ func (v *vgrep) grep(args []string) {
 	var cmd []string
 	var usegit bool
 	var env string
+	var greptype string // can have values , GIT, RIP, GNU, BSD
 
 	useripgrep := v.ripgrepInstalled() && !v.NoRipgrep
 	usegit = v.insideGitTree() && !v.NoGit
-
 	if useripgrep {
 		cmd = []string{
 			"rg", "-0", "--colors=path:none", "--colors=line:none",
@@ -208,6 +218,7 @@ func (v *vgrep) grep(args []string) {
 		}
 		cmd = append(cmd, args...)
 		cmd = append(cmd, ".")
+		greptype = "RIP"
 	} else if usegit {
 		env = "HOME="
 		cmd = []string{
@@ -215,22 +226,22 @@ func (v *vgrep) grep(args []string) {
 			"grep", "-z", "-In", "--color=always",
 		}
 		cmd = append(cmd, args...)
+		greptype = "GIT"
 	} else {
 		env = "GREP_COLORS='ms=01;31:mc=:sl=:cx=:fn=:ln=:se=:bn='"
 		cmd = []string{"grep", "-ZIn", "--color=always"}
 		cmd = append(cmd, args...)
 		cmd = append(cmd, "-r", ".")
+		greptype = v.getGrepType()
 	}
-
 	output, err := v.runCommand(cmd, env)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "searching symbols failed: %v\n", err)
 		os.Exit(1)
 	}
 	v.matches = make([][]string, len(output))
-
 	for i, m := range output {
-		file, line, content := v.splitMatch(m, usegit, useripgrep)
+		file, line, content := v.splitMatch(m, usegit, useripgrep, greptype)
 		v.matches[i] = make([]string, 4)
 		v.matches[i][0] = strconv.Itoa(i)
 		v.matches[i][1] = file
@@ -243,18 +254,28 @@ func (v *vgrep) grep(args []string) {
 
 // splitMatch splits match into its file, line and content.  The format of
 // match varies depending if it has been produced by grep or git-grep.
-func (v *vgrep) splitMatch(match string, gitgrep bool, ripgrep bool) (file, line, content string) {
+func (v *vgrep) splitMatch(match string, gitgrep bool, ripgrep bool, greptype string) (file, line, content string) {
 	if ripgrep {
 		// remove default color ansi escape codes from ripgrep's output
 		match = strings.Replace(match, "\x1b[0m", "", 4)
 	}
-	spl := bytes.SplitN([]byte(match), []byte{0}, 3)
-	if gitgrep && !ripgrep {
-		return string(spl[0]), string(spl[1]), string(spl[2])
+	var seperator []byte
+	switch greptype {
+	case "BSD":
+		seperator = []byte(":")
+	case "GIT", "GNU", "RIP":
+		seperator = []byte{0}
 	}
-	// the 2nd separator of grep is ":"
-	splline := bytes.SplitN(spl[1], []byte(":"), 2)
-	return string(spl[0]), string(splline[0]), string(splline[1])
+	spl := bytes.SplitN([]byte(match), seperator, 3)
+
+	switch greptype {
+	case "BSD", "GIT", "GNU":
+		file, line, content = string(spl[0]), string(spl[1]), string(spl[2])
+	case "RIP":
+		splline := bytes.SplitN(spl[1], []byte(":"), 2)
+		file, line, content = string(spl[0]), string(splline[0]), string(splline[1])
+	}
+	return
 }
 
 // getEditor returns the EDITOR environment variable (default="vim").
