@@ -191,7 +191,7 @@ func (v *vgrep) getGrepType() (grepType string) {
 	out, _ := v.runCommand([]string{"grep", "--version"}, "")
 	versionString := out[0]
 	// versionString = "grep (BSD grep) 2.5.1-FreeBSD"
-	versionRegex := regexp.MustCompile("\\(([[:alpha:]]+) grep\\)")
+	versionRegex := regexp.MustCompile(`\(([[:alpha:]]+) grep\)`)
 	// versionRegex matches to ["(BSD grep)", "BSD"], return "BSD"
 	grepType = versionRegex.FindStringSubmatch(versionString)[1]
 	return
