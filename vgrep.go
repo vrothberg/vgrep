@@ -267,11 +267,10 @@ func (v *vgrep) splitMatch(match string, gitgrep bool, ripgrep bool, greptype st
 		seperator = []byte{0}
 	}
 	spl := bytes.SplitN([]byte(match), seperator, 3)
-
 	switch greptype {
-	case "BSD", "GIT", "GNU":
+	case "BSD", "GIT":
 		file, line, content = string(spl[0]), string(spl[1]), string(spl[2])
-	case "RIP":
+	case "GNU", "RIP":
 		splline := bytes.SplitN(spl[1], []byte(":"), 2)
 		file, line, content = string(spl[0]), string(splline[0]), string(splline[1])
 	}
