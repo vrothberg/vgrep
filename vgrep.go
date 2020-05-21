@@ -241,7 +241,7 @@ func (v *vgrep) grep(args []string) {
 	}
 	v.matches = make([][]string, len(output))
 	for i, m := range output {
-		file, line, content := v.splitMatch(m, usegit, useripgrep, greptype)
+		file, line, content := v.splitMatch(m, greptype)
 		v.matches[i] = make([]string, 4)
 		v.matches[i][0] = strconv.Itoa(i)
 		v.matches[i][1] = file
@@ -254,8 +254,8 @@ func (v *vgrep) grep(args []string) {
 
 // splitMatch splits match into its file, line and content.  The format of
 // match varies depending if it has been produced by grep or git-grep.
-func (v *vgrep) splitMatch(match string, gitgrep bool, ripgrep bool, greptype string) (file, line, content string) {
-	if ripgrep {
+func (v *vgrep) splitMatch(match string, greptype string) (file, line, content string) {
+	if greptype == "RIP" {
 		// remove default color ansi escape codes from ripgrep's output
 		match = strings.Replace(match, "\x1b[0m", "", 4)
 	}
