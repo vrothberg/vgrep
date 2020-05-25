@@ -48,6 +48,14 @@ type vgrep struct {
 	waiter  sync.WaitGroup
 }
 
+// the type of underlying grep program
+const (
+	BSDGrep = "BSD"
+	GNUGrep = "GNU"
+	GITGrep = "GIT"
+	RIPGrep = "RIP"
+)
+
 // set in the Makefile
 var version string
 
@@ -218,7 +226,7 @@ func (v *vgrep) grep(args []string) {
 		}
 		cmd = append(cmd, args...)
 		cmd = append(cmd, ".")
-		greptype = "RIP"
+		greptype = RIPGrep
 	} else if usegit {
 		env = "HOME="
 		cmd = []string{
@@ -226,7 +234,7 @@ func (v *vgrep) grep(args []string) {
 			"grep", "-z", "-In", "--color=always",
 		}
 		cmd = append(cmd, args...)
-		greptype = "GIT"
+		greptype = GITGrep
 	} else {
 		env = "GREP_COLORS='ms=01;31:mc=:sl=:cx=:fn=:ln=:se=:bn='"
 		cmd = []string{"grep", "-ZIn", "--color=always"}
@@ -255,22 +263,22 @@ func (v *vgrep) grep(args []string) {
 // splitMatch splits match into its file, line and content.  The format of
 // match varies depending if it has been produced by grep or git-grep.
 func (v *vgrep) splitMatch(match string, greptype string) (file, line, content string) {
-	if greptype == "RIP" {
+	if greptype == RIPGrep {
 		// remove default color ansi escape codes from ripgrep's output
 		match = strings.Replace(match, "\x1b[0m", "", 4)
 	}
 	var seperator []byte
 	switch greptype {
-	case "BSD":
+	case BSDGrep:
 		seperator = []byte(":")
-	case "GIT", "GNU", "RIP":
+	case GITGrep, GNUGrep, RIPGrep:
 		seperator = []byte{0}
 	}
 	spl := bytes.SplitN([]byte(match), seperator, 3)
 	switch greptype {
-	case "BSD", "GIT":
+	case BSDGrep, GITGrep:
 		file, line, content = string(spl[0]), string(spl[1]), string(spl[2])
-	case "GNU", "RIP":
+	case GNUGrep, RIPGrep:
 		splline := bytes.SplitN(spl[1], []byte(":"), 2)
 		file, line, content = string(spl[0]), string(splline[0]), string(splline[1])
 	}
