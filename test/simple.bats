@@ -68,3 +68,21 @@
 	rmdir $tmp
 	[[ ${lines[@]} =~ "grep -ZHInr" ]]
 }
+
+@test "Simple search with -A" {
+	run ./build/vgrep -A 1 test
+	[ "$status" -eq 0 ]
+	[[ ${lines[0]} =~ "0" ]]
+}
+
+@test "Simple search with -B" {
+	run ./build/vgrep -B 1 test
+	[ "$status" -eq 0 ]
+	[[ ${lines[0]} =~ "0" ]]
+}
+
+@test "Simple search with -C" {
+	run ./build/vgrep -B 1 test
+	[ "$status" -eq 0 ]
+	[[ ${lines[0]} =~ "0" ]]
+}

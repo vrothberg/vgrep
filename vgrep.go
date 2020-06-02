@@ -258,21 +258,28 @@ func (v *vgrep) grep(args []string) {
 		os.Exit(1)
 	}
 	v.matches = make([][]string, len(output))
-	for i, m := range output {
-		file, line, content := v.splitMatch(m, greptype)
+	i := 0
+	for _, m := range output {
+		file, line, content, err := v.splitMatch(m, greptype)
+		if err != nil {
+			logrus.Debugf("skipping line: %v", err)
+			continue
+		}
 		v.matches[i] = make([]string, 4)
 		v.matches[i][0] = strconv.Itoa(i)
 		v.matches[i][1] = file
 		v.matches[i][2] = line
 		v.matches[i][3] = content
+		i++
 	}
+	v.matches = v.matches[0:i]
 
 	logrus.Debugf("found %d matches", len(v.matches))
 }
 
 // splitMatch splits match into its file, line and content.  The format of
 // match varies depending if it has been produced by grep or git-grep.
-func (v *vgrep) splitMatch(match string, greptype string) (file, line, content string) {
+func (v *vgrep) splitMatch(match string, greptype string) (file, line, content string, err error) {
 	if greptype == RIPGrep {
 		// remove default color ansi escape codes from ripgrep's output
 		match = strings.Replace(match, "\x1b[0m", "", 4)
@@ -290,7 +297,18 @@ func (v *vgrep) splitMatch(match string, greptype string) (file, line, content s
 		file, line, content = string(spl[0]), string(spl[1]), string(spl[2])
 	case GNUGrep, RIPGrep:
 		spl := bytes.SplitN([]byte(match), separator, 2)
+		if len(spl) != 3 {
+			return "", "", "", fmt.Errorf("invalid input format: %q", match)
+		}
+		file, line, content = string(spl[0]), string(spl[1]), string(spl[2])
+	case GNUGrep, RIPGrep:
+		if len(spl) != 2 {
+			return "", "", "", fmt.Errorf("invalid input format: %q", match)
+		}
 		splline := bytes.SplitN(spl[1], []byte(":"), 2)
+		if len(splline) != 2 {
+			return "", "", "", fmt.Errorf("invalid input format: %q", match)
+		}
 		file, line, content = string(spl[0]), string(splline[0]), string(splline[1])
 	}
 	return
