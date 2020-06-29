@@ -1,6 +1,6 @@
 package main
 
-// (c) 2015-2019 Valentin Rothberg <valentin@rothberg.email>
+// (c) 2015-2020 Valentin Rothberg <valentin@rothberg.email>
 //
 // Licensed under the terms of the GNU GPL License version 3.
 
@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -44,6 +45,7 @@ type cliArgs struct {
 type vgrep struct {
 	cliArgs
 	matches [][]string
+	workDir string
 	lock    lockfile.Lockfile
 	waiter  sync.WaitGroup
 }
@@ -89,6 +91,11 @@ func main() {
 	err = v.makeLockFile()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error creating lock file: %v\n", err)
+		os.Exit(1)
+	}
+	v.workDir, err = resolvedWorkdir()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error resolving working directory: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -472,15 +479,8 @@ func (v *vgrep) loadCache() error {
 	}
 
 	if length := len(v.matches); length > 0 {
-		oldWorkDir := v.matches[length-1][0]
+		v.workDir = v.matches[length-1][0]
 		v.matches = v.matches[:len(v.matches)-1]
-		workDir, err := resolvedWorkdir()
-		if err != nil {
-			return err
-		}
-		if workDir != oldWorkDir {
-			return fmt.Errorf("please cd into %s to use old cache", oldWorkDir)
-		}
 	}
 
 	return nil
@@ -692,15 +692,32 @@ func (v *vgrep) commandPrintMatches(indices []int) bool {
 	return false
 }
 
+// fileLocation returns the path and line number of the matches at the
+// specified index.
+func (v *vgrep) fileLocation(index int) (string, int, error) {
+	p := v.matches[index][1]
+	// If it's not an absolute path, join it with the workDir.
+	// This allows for using vgrep from another working dir
+	// than where the initial query was done.
+	if !path.IsAbs(p) {
+		p = path.Join(v.workDir, p)
+	}
+
+	line, err := strconv.Atoi(v.matches[index][2])
+	if err != nil {
+		return "", 0, err
+	}
+	return p, line, nil
+}
+
 // getContextLines return numLines context lines before and after the match at
 // the specified index including the matched line itself as []string.
 func (v *vgrep) getContextLines(index int, numLines int) [][]string {
 	var contextLines [][]string
 
-	path := v.matches[index][1]
-	line, err := strconv.Atoi(v.matches[index][2])
+	path, line, err := v.fileLocation(index)
 	if err != nil {
-		logrus.Warnf("error converting %q: %v", path, err)
+		logrus.Warn(err.Error())
 		return nil
 	}
 
@@ -800,11 +817,16 @@ func (v *vgrep) commandShow(index int) bool {
 	}
 
 	editor := v.getEditor()
-	file := v.matches[index][1]
-	lFlag := v.getEditorLineFlag() + v.matches[index][2]
+	path, line, err := v.fileLocation(index)
+	if err != nil {
+		logrus.Warn(err.Error())
+		return false
+	}
 
-	logrus.Debugf("opening index %d via: %s %s %s", index, editor, file, lFlag)
-	cmd := exec.Command(editor, file, lFlag)
+	lFlag := fmt.Sprintf("%s%d", v.getEditorLineFlag(), line)
+
+	logrus.Debugf("opening index %d via: %s %s %s", index, editor, path, lFlag)
+	cmd := exec.Command(editor, path, lFlag)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
