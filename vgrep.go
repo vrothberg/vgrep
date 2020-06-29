@@ -267,14 +267,14 @@ func (v *vgrep) splitMatch(match string, greptype string) (file, line, content s
 		// remove default color ansi escape codes from ripgrep's output
 		match = strings.Replace(match, "\x1b[0m", "", 4)
 	}
-	var seperator []byte
+	var separator []byte
 	switch greptype {
 	case BSDGrep:
-		seperator = []byte(":")
+		separator = []byte(":")
 	case GITGrep, GNUGrep, RIPGrep:
-		seperator = []byte{0}
+		separator = []byte{0}
 	}
-	spl := bytes.SplitN([]byte(match), seperator, 3)
+	spl := bytes.SplitN([]byte(match), separator, 3)
 	switch greptype {
 	case BSDGrep, GITGrep:
 		file, line, content = string(spl[0]), string(spl[1]), string(spl[2])
@@ -903,7 +903,7 @@ func (v *vgrep) commandListFiles(indices []int) bool {
 	return false
 }
 
-// parseSelectors parses input for vgrep selectors and returns the corresonding
+// parseSelectors parses input for vgrep selectors and returns the corresponding
 // indices as a sorted []int.
 func (v *vgrep) parseSelectors(input string) ([]int, error) {
 	indices := []int{}
