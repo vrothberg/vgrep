@@ -2,7 +2,7 @@
 
 [![Build Status](https://api.cirrus-ci.com/github/vrothberg/vgrep.svg)](https://cirrus-ci.com/github/vrothberg/vgrep)
 
-**vgrep** is a pager for `grep`, `git-grep`, `ripgrep` and similar grep implementations, and allows for openening the indexed file locations in a user-specified editor such as vim or emacs.  vgrep is inspired by the ancient **cgvg** scripts but extended to perform further operations such as listing statistics of files and directory trees or showing the context lines before and after the matches. vgrep runs on Linux, Windows and Mac OS.
+**vgrep** is a pager for `grep`, `git-grep`, `ripgrep` and similar grep implementations, and allows for opening the indexed file locations in a user-specified editor such as vim or emacs.  vgrep is inspired by the ancient **cgvg** scripts but extended to perform further operations such as listing statistics of files and directory trees or showing the context lines before and after the matches. vgrep runs on Linux, Windows and Mac OS.
 
 Please, feel free to copy, improve, distribute and share.  Feedback and patches are always welcome!
 
