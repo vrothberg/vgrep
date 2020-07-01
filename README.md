@@ -8,7 +8,7 @@ Please, feel free to copy, improve, distribute and share.  Feedback and patches 
 
 # Install Instructions
 
-* You can install `vgrep` on [openSUSE](https://software.opensuse.org/package/vgrep), [archlinux](https://aur.archlinux.org/packages/vgrep/), [Gentoo](https://packages.gentoo.org/packages/app-text/vgrep) and on Mac OS via [MacPorts](https://ports.macports.org/port/vgrep/summary).
+* You can install `vgrep` on [Fedora](https://src.fedoraproject.org/rpms/vgrep), [openSUSE](https://software.opensuse.org/package/vgrep), [archlinux](https://aur.archlinux.org/packages/vgrep/), [Gentoo](https://packages.gentoo.org/packages/app-text/vgrep), and on Mac OS via [MacPorts](https://ports.macports.org/port/vgrep/summary).
 * On other systems, you can build and install `vgrep` manually via `make build` and `make install`.
 
 # Searching Patterns
