@@ -826,7 +826,18 @@ func (v *vgrep) commandShow(index int) bool {
 	lFlag := fmt.Sprintf("%s%d", v.getEditorLineFlag(), line)
 
 	logrus.Debugf("opening index %d via: %s %s %s", index, editor, path, lFlag)
-	cmd := exec.Command(editor, path, lFlag)
+
+	var cmd *exec.Cmd
+	_, file := filepath.Split(editor)
+	switch file {
+	case "emacs":
+		// emacs expects the line before the file
+		cmd = exec.Command(editor, lFlag, path)
+	default:
+		// default to adding the line after the file
+		cmd = exec.Command(editor, path, lFlag)
+	}
+
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
