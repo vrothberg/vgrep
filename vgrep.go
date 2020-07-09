@@ -232,7 +232,6 @@ func (v *vgrep) grep(args []string) {
 			"--color=always", "--no-heading", "--line-number",
 		}
 		cmd = append(cmd, args...)
-		cmd = append(cmd, ".")
 		greptype = RIPGrep
 	} else if usegit {
 		env = "HOME="
@@ -244,9 +243,8 @@ func (v *vgrep) grep(args []string) {
 		greptype = GITGrep
 	} else {
 		env = "GREP_COLORS='ms=01;31:mc=:sl=:cx=:fn=:ln=:se=:bn='"
-		cmd = []string{"grep", "-ZIn", "--color=always"}
+		cmd = []string{"grep", "-ZInr", "--color=always"}
 		cmd = append(cmd, args...)
-		cmd = append(cmd, "-r", ".")
 		greptype = v.getGrepType()
 	}
 	output, err := v.runCommand(cmd, env)
