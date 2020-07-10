@@ -280,11 +280,12 @@ func (v *vgrep) splitMatch(match string, greptype string) (file, line, content s
 	case GITGrep, GNUGrep, RIPGrep:
 		separator = []byte{0}
 	}
-	spl := bytes.SplitN([]byte(match), separator, 3)
 	switch greptype {
 	case BSDGrep, GITGrep:
+		spl := bytes.SplitN([]byte(match), separator, 3)
 		file, line, content = string(spl[0]), string(spl[1]), string(spl[2])
 	case GNUGrep, RIPGrep:
+		spl := bytes.SplitN([]byte(match), separator, 2)
 		splline := bytes.SplitN(spl[1], []byte(":"), 2)
 		file, line, content = string(spl[0]), string(splline[0]), string(splline[1])
 	}
