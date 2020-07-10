@@ -230,6 +230,7 @@ func (v *vgrep) grep(args []string) {
 		cmd = []string{
 			"rg", "-0", "--colors=path:none", "--colors=line:none",
 			"--color=always", "--no-heading", "--line-number",
+			"--with-filename",
 		}
 		cmd = append(cmd, args...)
 		greptype = RIPGrep
@@ -243,7 +244,7 @@ func (v *vgrep) grep(args []string) {
 		greptype = GITGrep
 	} else {
 		env = "GREP_COLORS='ms=01;31:mc=:sl=:cx=:fn=:ln=:se=:bn='"
-		cmd = []string{"grep", "-ZInr", "--color=always"}
+		cmd = []string{"grep", "-ZHInr", "--color=always"}
 		cmd = append(cmd, args...)
 		greptype = v.getGrepType()
 	}
