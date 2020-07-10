@@ -41,3 +41,30 @@
 	[ "$status" -eq 0 ]
 	[[ ${lines[0]} =~ "0" ]]
 }
+
+# Check that all grep tools are used when expected
+
+@test "Search with ripgrep" {
+	run ./build/vgrep -d some_pattern 2>&1
+	[[ ${lines[@]} =~ "rg -0" ]]
+}
+
+@test "Search with git grep" {
+	run ./build/vgrep -d --no-ripgrep some_pattern 2>&1
+	[[ ${lines[@]} =~ "git -c color.grep.match=red bold grep" ]]
+}
+
+@test "Search with classic grep" {
+	run ./build/vgrep -d --no-ripgrep --no-git some_pattern 2>&1
+	[[ ${lines[@]} =~ "grep -ZHInr" ]]
+}
+
+@test "Fallback to classic grep with --no-ripgrep and outside of a git repo" {
+	tmp=$(mktemp -d)
+	vgrep_repo="$PWD"
+	pushd $tmp
+	run "$vgrep_repo"/build/vgrep -d --no-ripgrep some_pattern 2>&1
+	popd
+	rmdir $tmp
+	[[ ${lines[@]} =~ "grep -ZHInr" ]]
+}

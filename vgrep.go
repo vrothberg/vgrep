@@ -220,13 +220,10 @@ func isVscode() bool {
 // grep (git) greps with the specified args and stores the results in v.matches.
 func (v *vgrep) grep(args []string) {
 	var cmd []string
-	var usegit bool
 	var env string
 	var greptype string // can have values , GIT, RIP, GNU, BSD
 
-	useripgrep := v.ripgrepInstalled() && !v.NoRipgrep
-	usegit = v.insideGitTree() && !v.NoGit
-	if useripgrep {
+	if v.ripgrepInstalled() && !v.NoRipgrep {
 		cmd = []string{
 			"rg", "-0", "--colors=path:none", "--colors=line:none",
 			"--color=always", "--no-heading", "--line-number",
@@ -234,7 +231,7 @@ func (v *vgrep) grep(args []string) {
 		}
 		cmd = append(cmd, args...)
 		greptype = RIPGrep
-	} else if usegit {
+	} else if v.insideGitTree() && !v.NoGit {
 		env = "HOME="
 		cmd = []string{
 			"git", "-c", "color.grep.match=red bold",
