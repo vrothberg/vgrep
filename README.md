@@ -51,6 +51,7 @@ vgrep supports the following commands:
 - ``show`` to open the selectors in an user-specified editor (requires selectors).
 - ``context`` to print the context lines before and after the matched lines. ``c10 3-9`` prints 10 context lines of the matching lines 3 to 9.  Unless specified, vgrep will print 5 context lines.
 - ``tree`` to print the number of matches for each directory in the tree.
+- ``delete`` to remove lines at selected indices from the results, for the duration of the interactive shell (requires selectors).
 - ``files`` will print the number of matches for each file in the tree.
 - ``quit`` to exit the interactive shell.
 - ``?`` to show the help for vgrep commands.

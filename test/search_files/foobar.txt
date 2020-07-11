@@ -1,1 +1,12 @@
 foo bar baz
+zero peanut
+one peanut
+two peanuts
+three peanuts
+four peanuts
+five peanuts
+six peanuts
+seven peanuts
+eight peanuts
+nine peanuts
+ten peanuts

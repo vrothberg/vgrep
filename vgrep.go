@@ -799,7 +799,7 @@ func (v *vgrep) commandDelete(indices []int) bool {
 		for i := idx + 1; i < len(v.matches); i++ {
 			v.matches[i][0] = strconv.Itoa(i - 1)
 		}
-		index := idx + offset
+		index := idx - offset
 		v.matches = append(v.matches[:index], v.matches[index+1:]...)
 	}
 
