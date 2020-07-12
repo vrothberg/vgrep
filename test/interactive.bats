@@ -29,3 +29,17 @@ EOF
 	[[ ${lines[1]} =~ "four" ]]
 	[[ ${lines[2]} =~ "six" ]]
 }
+
+@test "Interactive mode and refine with regexp" {
+	./build/vgrep peanut $FILE > /dev/null
+	run ./build/vgrep --show r '(zero|f[^i].* p|six)' --interactive --no-header << EOF
+p
+q
+EOF
+	[ "$status" -eq 0 ]
+	# We expect 3 results, but there is also a prompt line in the output
+	[[ ${#lines[*]} -eq 4 ]]
+	[[ ${lines[0]} =~ "zero" ]]
+	[[ ${lines[1]} =~ "four" ]]
+	[[ ${lines[2]} =~ "six" ]]
+}
