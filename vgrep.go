@@ -605,6 +605,14 @@ func (v *vgrep) dispatchCommand(input string) bool {
 		return v.commandDelete(indices)
 	}
 
+	if command == "k" || command == "keep" {
+		if len(indices) == 0 {
+			fmt.Println("keep requires specified selectors")
+			return false
+		}
+		return v.commandKeep(indices)
+	}
+
 	if command == "f" || command == "files" {
 		return v.commandListFiles(indices)
 	}
@@ -640,9 +648,10 @@ func (v *vgrep) dispatchCommand(input string) bool {
 func (v *vgrep) commandPrintHelp() bool {
 	fmt.Printf("vgrep command help: command[context lines] [selectors]\n")
 	fmt.Printf("         selectors: '3' (single), '1,2,6' (multi), '1-8' (range)\n")
-	fmt.Printf("          commands: %srint, %show, %sontext, %sree, %selete, %siles, %suit, %s\n",
+	fmt.Printf("          commands: %srint, %show, %sontext, %sree, %selete, %seep, %siles, %suit, %s\n",
 		ansi.Bold("p"), ansi.Bold("s"), ansi.Bold("c"), ansi.Bold("t"),
-		ansi.Bold("d"), ansi.Bold("f"), ansi.Bold("q"), ansi.Bold("?"))
+		ansi.Bold("d"), ansi.Bold("k"), ansi.Bold("f"), ansi.Bold("q"),
+		ansi.Bold("?"))
 	return false
 }
 
@@ -805,6 +814,24 @@ func (v *vgrep) commandDelete(indices []int) bool {
 	}
 
 	return false
+}
+
+// commandKeep does the opposite of commandDelete and keeps only provided
+// indices in v.matches.
+func (v *vgrep) commandKeep(indices []int) bool {
+	var toDelete []int
+	var last int
+
+	for _, idx := range indices {
+		for i := last; i < idx; i++ {
+			toDelete = append(toDelete, i)
+		}
+		last = idx + 1
+	}
+	for i := last; i < len(v.matches); i++ {
+		toDelete = append(toDelete, i)
+	}
+	return v.commandDelete(toDelete)
 }
 
 // commandShow opens the environment's editor at v.matches[index].
