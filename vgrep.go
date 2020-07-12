@@ -552,6 +552,18 @@ func (v *vgrep) dispatchCommand(input string) bool {
 		return v.commandPrintHelp()
 	}
 
+	// Deal first with "refine" because for all other commands (below) we
+	// assume that any argument is provided as a set of selectors on
+	// indices. "refine" expects a regexp.
+	cmdArray := strings.SplitN(input, " ", 2)
+	if cmdArray[0] == "r" || cmdArray[0] == "refine" {
+		if len(cmdArray) != 2 {
+			fmt.Println("refine expects a regexp argument")
+			return false
+		}
+		return v.commandRefine(cmdArray[1])
+	}
+
 	// normalize selector-only inputs (e.g., "1,2,3,5-10") to the show cmd
 	numRgx := regexp.MustCompile(`^([\d]+){0,1}([\d , -]+){0,1}$`)
 	if numRgx.MatchString(input) {
@@ -567,7 +579,7 @@ func (v *vgrep) dispatchCommand(input string) bool {
 	var command, selectors string
 	var context int
 
-	cmdArray := cmdRgx.FindStringSubmatch(input)
+	cmdArray = cmdRgx.FindStringSubmatch(input)
 	command = cmdArray[1]
 	selectors = cmdArray[3]
 	context = -1
@@ -649,10 +661,10 @@ func (v *vgrep) dispatchCommand(input string) bool {
 func (v *vgrep) commandPrintHelp() bool {
 	fmt.Printf("vgrep command help: command[context lines] [selectors]\n")
 	fmt.Printf("         selectors: '3' (single), '1,2,6' (multi), '1-8' (range)\n")
-	fmt.Printf("          commands: %srint, %show, %sontext, %sree, %selete, %seep, %siles, %suit, %s\n",
+	fmt.Printf("          commands: %srint, %show, %sontext, %sree, %selete, %seep, %sefine, %siles, %suit, %s\n",
 		ansi.Bold("p"), ansi.Bold("s"), ansi.Bold("c"), ansi.Bold("t"),
-		ansi.Bold("d"), ansi.Bold("k"), ansi.Bold("f"), ansi.Bold("q"),
-		ansi.Bold("?"))
+		ansi.Bold("d"), ansi.Bold("k"), ansi.Bold("r"), ansi.Bold("f"),
+		ansi.Bold("q"), ansi.Bold("?"))
 	return false
 }
 
@@ -831,6 +843,24 @@ func (v *vgrep) commandKeep(indices []int) bool {
 	}
 	for i := last; i < len(v.matches); i++ {
 		toDelete = append(toDelete, i)
+	}
+	return v.commandDelete(toDelete)
+}
+
+// commandRefine deletes all results that do not match the provided pattern
+// (regexp) from the list.
+func (v *vgrep) commandRefine(expr string) bool {
+	pattern, err := regexp.Compile(expr)
+	if err != nil {
+		fmt.Printf("failed to compile '%s' as a regexp\n", expr)
+		return false
+	}
+
+	var toDelete []int
+	for offset, grepMatch := range v.matches {
+		if !pattern.Match([]byte(ansi.RemoveANSI(grepMatch[3]))) {
+			toDelete = append(toDelete, offset)
+		}
 	}
 	return v.commandDelete(toDelete)
 }
