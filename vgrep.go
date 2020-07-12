@@ -842,7 +842,7 @@ func (v *vgrep) commandShow(index int) bool {
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		fmt.Printf("douldn't open index %d: %v\n", index, err)
+		fmt.Printf("couldn't open index %d: %v\n", index, err)
 	}
 
 	return false
