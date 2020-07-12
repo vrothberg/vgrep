@@ -506,6 +506,7 @@ func (v *vgrep) commandParse() {
 		usrInp, err := line.Prompt("Enter a vgrep command: ")
 		if err != nil {
 			// Either we hit an error or EOF (ctrl+d)
+			line.Close()
 			fmt.Fprintf(os.Stderr, "error parsing user input: %v\n", err)
 			os.Exit(1)
 		}
