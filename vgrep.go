@@ -24,6 +24,7 @@ import (
 
 	"github.com/jessevdk/go-flags"
 	"github.com/nightlyone/lockfile"
+	"github.com/peterh/liner"
 	"github.com/sirupsen/logrus"
 	"github.com/vrothberg/vgrep/internal/ansi"
 	"github.com/vrothberg/vgrep/internal/colwriter"
@@ -497,18 +498,18 @@ func sortKeys(m map[string]int) []string {
 // user input matches a vgrep selector commandShow will be executed. It will
 // prompt the user for commands if we're running in interactive mode.
 func (v *vgrep) commandParse() {
+	line := liner.NewLiner()
+	defer line.Close()
+	line.SetCtrlCAborts(true)
+
 	nextInput := func() string {
-		scanner := bufio.NewScanner(os.Stdin)
-		fmt.Print(ansi.Bold("Enter a vgrep command: "))
-		if !scanner.Scan() {
+		usrInp, err := line.Prompt("Enter a vgrep command: ")
+		if err != nil {
 			// Either we hit an error or EOF (ctrl+d)
-			if err := scanner.Err(); err != nil {
-				fmt.Fprintf(os.Stderr, "error parsing user input: %v", err)
-			}
-			fmt.Println()
+			fmt.Fprintf(os.Stderr, "error parsing user input: %v\n", err)
 			os.Exit(1)
 		}
-		usrInp := scanner.Text()
+		line.AppendHistory(usrInp)
 		logrus.Debugf("user input: %q", usrInp)
 		return usrInp
 	}

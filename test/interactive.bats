@@ -6,8 +6,7 @@
 p
 q
 EOF
-	# Current shell returns 1 in this case, skip status check
-	#[ "$status" -eq 0 ]
+	[ "$status" -eq 0 ]
 	# We expect 3 results, but there is also a prompt line in the output
 	[[ ${#lines[*]} -eq 4 ]]
 	[[ ${lines[0]} =~ "zero" ]]
