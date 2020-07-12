@@ -124,6 +124,9 @@ func (cw *ColWriter) Write(rows [][]string) {
 		panic("Write() on unopened ColWriter\n")
 	}
 	cw.ComputeSize(rows)
+	if len(rows) == 0 {
+		return
+	}
 	max := len(rows[0]) - 1
 
 	if cw.Headers {
