@@ -2,8 +2,12 @@
 github.com/jessevdk/go-flags
 # github.com/konsorten/go-windows-terminal-sequences v1.0.3
 github.com/konsorten/go-windows-terminal-sequences
+# github.com/mattn/go-runewidth v0.0.3
+github.com/mattn/go-runewidth
 # github.com/nightlyone/lockfile v1.0.0
 github.com/nightlyone/lockfile
+# github.com/peterh/liner v1.2.0
+github.com/peterh/liner
 # github.com/sirupsen/logrus v1.6.0
 github.com/sirupsen/logrus
 # golang.org/x/sys v0.0.0-20200509044756-6aff5f38e54f
