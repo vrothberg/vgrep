@@ -43,3 +43,16 @@ EOF
 	[[ ${lines[1]} =~ "four" ]]
 	[[ ${lines[2]} =~ "six" ]]
 }
+
+@test "Interactive mode and new grep search" {
+	./build/vgrep my_pattern > /dev/null
+	run ./build/vgrep --show "g -w peanut $FILE" \
+		--interactive --no-header << EOF
+q
+EOF
+	[ "$status" -eq 0 ]
+	# We expect 2 results, but there is also a prompt line in the output
+	[[ ${#lines[*]} -eq 3 ]]
+	[[ ${lines[0]} =~ "zero" ]]
+	[[ ${lines[1]} =~ "one" ]]
+}

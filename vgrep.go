@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/jessevdk/go-flags"
+	"github.com/mattn/go-shellwords"
 	"github.com/nightlyone/lockfile"
 	"github.com/peterh/liner"
 	"github.com/sirupsen/logrus"
@@ -552,16 +553,26 @@ func (v *vgrep) dispatchCommand(input string) bool {
 		return v.commandPrintHelp()
 	}
 
-	// Deal first with "refine" because for all other commands (below) we
-	// assume that any argument is provided as a set of selectors on
-	// indices. "refine" expects a regexp.
+	// Most commands accept only a set of selectors on indices as arguments.
+	// Before we try to parse arguments as selectors, deal with the few
+	// commands that take random strings as arguments.
+
 	cmdArray := strings.SplitN(input, " ", 2)
+
 	if cmdArray[0] == "r" || cmdArray[0] == "refine" {
 		if len(cmdArray) != 2 {
 			fmt.Println("refine expects a regexp argument")
 			return false
 		}
 		return v.commandRefine(cmdArray[1])
+	}
+
+	if cmdArray[0] == "g" || cmdArray[0] == "grep" {
+		if len(cmdArray) < 2 {
+			fmt.Println("grep expects at least a pattern")
+			return false
+		}
+		return v.commandGrep(cmdArray[1])
 	}
 
 	// normalize selector-only inputs (e.g., "1,2,3,5-10") to the show cmd
@@ -661,10 +672,10 @@ func (v *vgrep) dispatchCommand(input string) bool {
 func (v *vgrep) commandPrintHelp() bool {
 	fmt.Printf("vgrep command help: command[context lines] [selectors]\n")
 	fmt.Printf("         selectors: '3' (single), '1,2,6' (multi), '1-8' (range)\n")
-	fmt.Printf("          commands: %srint, %show, %sontext, %sree, %selete, %seep, %sefine, %siles, %suit, %s\n",
+	fmt.Printf("          commands: %srint, %show, %sontext, %sree, %selete, %seep, %sefine, %siles, %srep, %suit, %s\n",
 		ansi.Bold("p"), ansi.Bold("s"), ansi.Bold("c"), ansi.Bold("t"),
 		ansi.Bold("d"), ansi.Bold("k"), ansi.Bold("r"), ansi.Bold("f"),
-		ansi.Bold("q"), ansi.Bold("?"))
+		ansi.Bold("g"), ansi.Bold("q"), ansi.Bold("?"))
 	return false
 }
 
@@ -863,6 +874,26 @@ func (v *vgrep) commandRefine(expr string) bool {
 		}
 	}
 	return v.commandDelete(toDelete)
+}
+
+func (v *vgrep) commandGrep(expr string) bool {
+	args, err := shellwords.Parse(expr)
+	if err != nil {
+		fmt.Printf("failed to parse '%s': %s (missing quotes?)\n", expr, err)
+		return false
+	}
+
+	logrus.Debugf("new grep from interactive shell, passed args: %s", args)
+	v.waiter.Add(1)
+	v.grep(args)
+	v.cacheWrite()
+
+	if len(v.matches) > 0 {
+		v.commandPrintMatches([]int{})
+	}
+
+	v.waiter.Wait()
+	return false
 }
 
 // commandShow opens the environment's editor at v.matches[index].

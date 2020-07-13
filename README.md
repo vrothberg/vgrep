@@ -41,7 +41,7 @@ Once vgreped, you can perform certain operations on the results such as limiting
 Enter a vgrep command: ?
 vgrep command help: command[context lines] [selectors]
          selectors: '3' (single), '1,2,6' (multi), '1-8' (range)
-          commands: print, show, context, tree, delete, keep, refine, files, quit, ?
+          commands: print, show, context, tree, delete, keep, refine, files, grep, quit, ?
 ```
 vgrep commands can be passed directly to the ``--show/-s`` flag, for instance as ``--show c5 1-10`` to show the five context lines of the first ten matched lines.  Furthermore, the commands can be executed in an interactive shell via the ``--interactive/-i`` flag. Running ``vgrep --interactive`` will enter the shell directly, ``vgrep --show 1 --interactive`` will first open the first matched line in the editor and enter the interactive shell after.
 
@@ -55,6 +55,7 @@ vgrep supports the following commands:
 - ``keep`` to keep only lines at selected indices from the results, for the duration of the interactive shell (requires selectors).
 - ``refine`` to keep only lines matching the provided regexp pattern from the results, for the duration of the interactive shell (requires a regexp string).
 - ``files`` will print the number of matches for each file in the tree.
+- ``grep`` start a new search without leaving the interactive shell (requires arguments for a ``vgrep`` search). For example, ``g -i "foo bar" dir/`` will trigger a case-insensitive search for ``foo bar`` in the files under ``dir``. The cache will be updated with the results from the new search.
 - ``quit`` to exit the interactive shell.
 - ``?`` to show the help for vgrep commands.
 
