@@ -68,3 +68,12 @@
 	rmdir $tmp
 	[[ ${lines[@]} =~ "grep -ZHInr" ]]
 }
+
+# Other checks
+
+@test "Fail gracefully with error message when unable to parse output" {
+	run ./build/vgrep -d -C5 peanut
+	[ "$status" -eq 1 ]
+	[[ ${lines[@]} =~ "failed to parse results, did you use an option that modifies the output?" ]]
+	[[ ${lines[@]} =~ "level=debug msg=\"failed to parse:" ]]
+}
