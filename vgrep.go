@@ -273,6 +273,8 @@ func (v *vgrep) grep(args []string) {
 // splitMatch splits match into its file, line and content.  The format of
 // match varies depending if it has been produced by grep or git-grep.
 func (v *vgrep) splitMatch(match string, greptype string) (file, line, content string) {
+	parseError := fmt.Errorf("failed to parse results, did you use an option that modifies the output?")
+
 	if greptype == RIPGrep {
 		// remove default color ansi escape codes from ripgrep's output
 		match = strings.Replace(match, "\x1b[0m", "", 4)
@@ -287,10 +289,25 @@ func (v *vgrep) splitMatch(match string, greptype string) (file, line, content s
 	switch greptype {
 	case BSDGrep, GITGrep:
 		spl := bytes.SplitN([]byte(match), separator, 3)
+		if len(spl) < 3 {
+			fmt.Fprintln(os.Stderr, parseError)
+			logrus.Debugf("failed to parse: %s", match)
+			os.Exit(1)
+		}
 		file, line, content = string(spl[0]), string(spl[1]), string(spl[2])
 	case GNUGrep, RIPGrep:
 		spl := bytes.SplitN([]byte(match), separator, 2)
+		if len(spl) < 2 {
+			fmt.Fprintln(os.Stderr, parseError)
+			logrus.Debugf("failed to parse: %s", match)
+			os.Exit(1)
+		}
 		splline := bytes.SplitN(spl[1], []byte(":"), 2)
+		if len(splline) < 2 {
+			fmt.Fprintln(os.Stderr, parseError)
+			logrus.Debugf("failed to parse: %s", match)
+			os.Exit(1)
+		}
 		file, line, content = string(spl[0]), string(splline[0]), string(splline[1])
 	}
 	return
