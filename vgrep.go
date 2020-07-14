@@ -60,8 +60,13 @@ const (
 	RIPGrep = "RIP"
 )
 
-// set in the Makefile
-var version string
+var (
+	// set in the Makefile
+	version string
+
+	commands = [...]string{"print", "show", "context", "tree", "delete",
+		"keep", "refine", "files", "grep", "quit", "?"}
+)
 
 func main() {
 	var (
@@ -495,6 +500,50 @@ func sortKeys(m map[string]int) []string {
 	return keys
 }
 
+// shellCompleter is a completion function for the interactive shell's prompt.
+func shellCompleter(line string) (c []string) {
+	args, err := shellwords.Parse(line)
+	if err != nil {
+		return
+	}
+
+	if len(args) < 2 {
+		for _, cmd := range commands {
+			if strings.HasPrefix(cmd, line) {
+				c = append(c, cmd)
+			}
+		}
+		return
+	}
+
+	arg := args[len(args)-1]
+	switch args[0] {
+	case "g", "grep":
+		if len(args) < 3 {
+			return
+		}
+		dir := filepath.Dir(arg)
+		base := filepath.Base(arg)
+		if arg[len(arg)-1] == '/' {
+			dir = arg
+			base = ""
+		}
+		files, err := ioutil.ReadDir(dir)
+		if err != nil {
+			return
+		}
+		for _, f := range files {
+			if strings.HasPrefix(f.Name(), base) {
+				comp := line + f.Name()[len(base):]
+				c = append(c, comp)
+			}
+		}
+	default:
+		return
+	}
+	return
+}
+
 // commandParse starts and dispatches user-specific vgrep commands.  If the
 // user input matches a vgrep selector commandShow will be executed. It will
 // prompt the user for commands if we're running in interactive mode.
@@ -502,6 +551,7 @@ func (v *vgrep) commandParse() {
 	line := liner.NewLiner()
 	defer line.Close()
 	line.SetCtrlCAborts(true)
+	line.SetCompleter(shellCompleter)
 
 	nextInput := func() string {
 		usrInp, err := line.Prompt("Enter a vgrep command: ")
@@ -670,12 +720,15 @@ func (v *vgrep) dispatchCommand(input string) bool {
 
 // commandPrintHelp prints the help/usage message for vgrep commands on stdout.
 func (v *vgrep) commandPrintHelp() bool {
+	// Join command names, but write first letter in bold.
+	commandList := ansi.Bold(string(commands[0][0])) + commands[0][1:]
+	for _, c := range commands[1:] {
+		commandList += ", " + ansi.Bold(string(c[0])) + c[1:]
+	}
+
 	fmt.Printf("vgrep command help: command[context lines] [selectors]\n")
 	fmt.Printf("         selectors: '3' (single), '1,2,6' (multi), '1-8' (range)\n")
-	fmt.Printf("          commands: %srint, %show, %sontext, %sree, %selete, %seep, %sefine, %siles, %srep, %suit, %s\n",
-		ansi.Bold("p"), ansi.Bold("s"), ansi.Bold("c"), ansi.Bold("t"),
-		ansi.Bold("d"), ansi.Bold("k"), ansi.Bold("r"), ansi.Bold("f"),
-		ansi.Bold("g"), ansi.Bold("q"), ansi.Bold("?"))
+	fmt.Printf("          commands: %s\n", commandList)
 	return false
 }
 
