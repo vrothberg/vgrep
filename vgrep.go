@@ -643,12 +643,13 @@ func (v *vgrep) dispatchCommand(input string) bool {
 	}
 
 	// normalize selector-only inputs (e.g., "1,2,3,5-10") to the show cmd
-	numRgx := regexp.MustCompile(`^([\d]+){0,1}([\d , -]+){0,1}$`)
+	selectorRegexp := `( +all|[\d , -]+){0,1}`
+	numRgx := regexp.MustCompile(`^` + selectorRegexp + `$`)
 	if numRgx.MatchString(input) {
 		input = "s " + input
 	}
 
-	cmdRgx := regexp.MustCompile(`^([a-z?]{1,})([\d]+){0,1}([\d , -]+){0,1}$`)
+	cmdRgx := regexp.MustCompile(`^([a-z?]{1,})([\d]+){0,1}` + selectorRegexp + `$`)
 	if !cmdRgx.MatchString(input) {
 		fmt.Printf("%q doesn't match format %q\n", input, "command[context lines] [selectors]")
 		return false
@@ -744,7 +745,7 @@ func (v *vgrep) commandPrintHelp() bool {
 	}
 
 	fmt.Printf("vgrep command help: command[context lines] [selectors]\n")
-	fmt.Printf("         selectors: '3' (single), '1,2,6' (multi), '1-8' (range)\n")
+	fmt.Printf("         selectors: '3' (single), '1,2,6' (multi), '1-8' (range), 'all'\n")
 	fmt.Printf("          commands: %s\n", commandList)
 	return false
 }
@@ -1097,6 +1098,14 @@ func (v *vgrep) commandListFiles(indices []int) bool {
 // indices as a sorted []int.
 func (v *vgrep) parseSelectors(input string) ([]int, error) {
 	indices := []int{}
+
+	if strings.TrimSpace(input) == "all" {
+		for i := 0; i < len(v.matches); i++ {
+			indices = append(indices, i)
+		}
+		return indices, nil
+	}
+
 	selRgx := regexp.MustCompile("([^,]+)")
 
 	toInt := func(idx string) (int, error) {
