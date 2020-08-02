@@ -23,7 +23,7 @@ all: check build
 
 .PHONY: build
 build: $(GO_SRC)
-	$(GO_BUILD) -buildmode=pie -o $(BUILD_DIR)/$(NAME) -ldflags "-s -w -X main.version=${VERSION}-$(COMMIT)-dev"
+	$(GO_BUILD) -buildmode=pie -o $(BUILD_DIR)/$(NAME) -ldflags "-s -w -X main.version=${VERSION}-$(COMMIT)"
 
 .PHONY: release
 release: $(GO_SRC)
