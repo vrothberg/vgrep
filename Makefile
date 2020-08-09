@@ -19,11 +19,31 @@ ifeq ($(shell go help mod >/dev/null 2>&1 && echo true), true)
 	GO_BUILD=GO111MODULE=on $(GO) build -mod=vendor
 endif
 
+COVERAGE_PATH ?= $(shell pwd)/.coverage
+COVERAGE_PROFILE ?= $(shell pwd)/coverage.txt
+export COVERAGE_PATH
+export COVERAGE_PROFILE
+$(shell mkdir -p ${COVERAGE_PATH})
+
 all: check build
 
 .PHONY: build
 build: $(GO_SRC)
 	$(GO_BUILD) -buildmode=pie -o $(BUILD_DIR)/$(NAME) -ldflags "-s -w -X main.version=${VERSION}-$(COMMIT)"
+
+.PHONY: build.coverage
+build.coverage: $(GO_SRC)
+	$(GO) test \
+		-covermode=count \
+		-coverpkg=./... \
+		-mod=vendor \
+		-tags coverage \
+		-buildmode=pie -c -o $(BUILD_DIR)/$(NAME) \
+		-ldflags "-s -w -X main.version=${VERSION}-$(COMMIT)"
+
+.PHONY: codecov
+codecov:
+	bash <(curl -s https://codecov.io/bash) -v -s $(COVERAGE_PATH) -f "coverprofile.integration.*"
 
 .PHONY: release
 release: $(GO_SRC)
@@ -48,6 +68,10 @@ test: test-integration
 test-integration:
 	export PATH=./test/bin:$$PATH; bats test/*.bats
 
+.PHONY: test-integration.coverage
+test-integration.coverage:
+	export PATH=./test/bin:$$PATH; export COVERAGE=1; bats test/*.bats
+
 .PHONY: vendor
 vendor:
 	GO111MODULE=on go mod tidy
@@ -60,6 +84,7 @@ vendor:
 		URL=https://raw.githubusercontent.com/golangci/golangci-lint \
 		BINDIR=${BUILD_DIR} && \
 	curl -sfL $$URL/$$VERSION/install.sh | sh -s $$VERSION
+	VERSION=v1.1.0 ./hack/install_bats.sh
 
 	curl -L https://github.com/BurntSushi/ripgrep/releases/download/12.0.1/ripgrep-12.0.1-x86_64-unknown-linux-musl.tar.gz | tar xz
 	mkdir -p ./test/bin && mv ripgrep-12.0.1-x86_64-unknown-linux-musl/rg ./test/bin/ && rm -rf ripgrep-12.0.1-x86_64-unknown-linux-musl
