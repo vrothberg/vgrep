@@ -1,10 +1,12 @@
 #!/usr/bin/env bats -t
 
+load helpers
+
 FILE=test/search_files/foobar.txt
 
 @test "Interactive mode and delete with selectors" {
-	./build/vgrep peanut $FILE > /dev/null
-	run ./build/vgrep --show d 1,2-3,5,7-9,8-10 --interactive --no-header << EOF
+	run_vgrep peanut $FILE > /dev/null
+	run_vgrep --show d 1,2-3,5,7-9,8-10 --interactive --no-header << EOF
 p
 q
 EOF
@@ -17,8 +19,8 @@ EOF
 }
 
 @test "Interactive mode and keep with selectors" {
-	./build/vgrep peanut $FILE > /dev/null
-	run ./build/vgrep --show k 0,4,6 --interactive --no-header << EOF
+	run_vgrep peanut $FILE > /dev/null
+	run_vgrep --show k 0,4,6 --interactive --no-header << EOF
 p
 q
 EOF
@@ -31,8 +33,8 @@ EOF
 }
 
 @test "Interactive mode and refine with regexp" {
-	./build/vgrep peanut $FILE > /dev/null
-	run ./build/vgrep --show r '(zero|f[^i].* p|six)' --interactive --no-header << EOF
+	run_vgrep peanut $FILE > /dev/null
+	run_vgrep --show r '(zero|f[^i].* p|six)' --interactive --no-header << EOF
 p
 q
 EOF
@@ -45,8 +47,8 @@ EOF
 }
 
 @test "Interactive mode and new grep search" {
-	./build/vgrep my_pattern > /dev/null
-	run ./build/vgrep --show "g -w peanut $FILE" \
+	run_vgrep my_pattern > /dev/null
+	run_vgrep --show "g -w peanut $FILE" \
 		--interactive --no-header << EOF
 q
 EOF
