@@ -273,13 +273,19 @@ func (v *vgrep) grep(args []string) {
 		os.Exit(1)
 	}
 	v.matches = make([][]string, len(output))
-	for i, m := range output {
-		file, line, content := v.splitMatch(m, greptype)
+	i := 0
+	for _, m := range output {
+		file, line, content, err := v.splitMatch(m, greptype)
+		if err != nil {
+			logrus.Debugf("skipping line %q (parse error: %v)", m, err)
+			continue
+		}
 		v.matches[i] = make([]string, 4)
 		v.matches[i][0] = strconv.Itoa(i)
 		v.matches[i][1] = file
 		v.matches[i][2] = line
 		v.matches[i][3] = content
+		i++
 	}
 
 	logrus.Debugf("found %d matches", len(v.matches))
@@ -287,9 +293,7 @@ func (v *vgrep) grep(args []string) {
 
 // splitMatch splits match into its file, line and content.  The format of
 // match varies depending if it has been produced by grep or git-grep.
-func (v *vgrep) splitMatch(match string, greptype string) (file, line, content string) {
-	parseError := fmt.Errorf("failed to parse results, did you use an option that modifies the output?")
-
+func (v *vgrep) splitMatch(match string, greptype string) (file, line, content string, err error) {
 	if greptype == RIPGrep {
 		// remove default color ansi escape codes from ripgrep's output
 		match = strings.Replace(match, "\x1b[0m", "", 4)
@@ -305,25 +309,28 @@ func (v *vgrep) splitMatch(match string, greptype string) (file, line, content s
 	case BSDGrep, GITGrep:
 		spl := bytes.SplitN([]byte(match), separator, 3)
 		if len(spl) < 3 {
-			fmt.Fprintln(os.Stderr, parseError)
-			logrus.Debugf("failed to parse: %s", match)
-			os.Exit(1)
+			err = fmt.Errorf("expected %d but split into %d items (%v)", 3, len(spl), separator)
+			return
 		}
 		file, line, content = string(spl[0]), string(spl[1]), string(spl[2])
 	case GNUGrep, RIPGrep:
 		spl := bytes.SplitN([]byte(match), separator, 2)
 		if len(spl) < 2 {
-			fmt.Fprintln(os.Stderr, parseError)
-			logrus.Debugf("failed to parse: %s", match)
-			os.Exit(1)
+			err = fmt.Errorf("expected %d but split into %d items (%v)", 2, len(spl), separator)
+			return
 		}
 		splline := bytes.SplitN(spl[1], []byte(":"), 2)
-		if len(splline) < 2 {
-			fmt.Fprintln(os.Stderr, parseError)
-			logrus.Debugf("failed to parse: %s", match)
-			os.Exit(1)
+		if len(splline) != 2 {
+			// Fall back to "-" which is used when displaying
+			// context lines.
+			splline = bytes.SplitN(spl[1], []byte("-"), 2)
 		}
-		file, line, content = string(spl[0]), string(splline[0]), string(splline[1])
+		if len(splline) == 2 {
+			file, line, content = string(spl[0]), string(splline[0]), string(splline[1])
+			return
+		}
+		err = fmt.Errorf("unexpected input")
+		return
 	}
 	return
 }

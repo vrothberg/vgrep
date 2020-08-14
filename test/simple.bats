@@ -73,11 +73,11 @@ load helpers
 
 # Other checks
 
-@test "Fail gracefully with error message when unable to parse output" {
+@test "Search with -C5 for context lines" {
 	run_vgrep -d -C5 peanut
-	[ "$status" -eq 1 ]
-	[[ ${lines[@]} =~ "failed to parse results, did you use an option that modifies the output?" ]]
-	[[ ${lines[@]} =~ "level=debug msg=\"failed to parse:" ]]
+	[ "$status" -eq 0 ]
+	echo "${lines[@]}"
+	[[ ${lines[@]} =~ "level=debug msg=\"skipping line \\\"--\\\" (parse error: expected 2 but split into 1 items ([0]))\"" ]]
 }
 
 @test "Exit with 1 when a search has no matches" {
