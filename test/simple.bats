@@ -79,3 +79,16 @@ load helpers
 	[[ ${lines[@]} =~ "failed to parse results, did you use an option that modifies the output?" ]]
 	[[ ${lines[@]} =~ "level=debug msg=\"failed to parse:" ]]
 }
+
+@test "Exit with 1 when a search has no matches" {
+	run_vgrep "^cashew$"
+	[ "$status" -eq 1 ]
+	[[ ${#lines[*]} -eq 0 ]]
+}
+
+@test "Exit with 1 when operating on empty results" {
+	run_vgrep "^cashew$" > /dev/null
+	run_vgrep
+	[ "$status" -eq 1 ]
+	[[ ${#lines[*]} -eq 0 ]]
+}
