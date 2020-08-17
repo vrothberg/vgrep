@@ -122,29 +122,29 @@ func main() {
 			fmt.Fprintf(os.Stderr, "error loading cache: %v\n", err)
 			os.Exit(1)
 		}
-	} else {
-		v.waiter.Add(1)
-		v.grep(args)
-		v.cacheWrite() // this runs in the background
-	}
 
-	if len(v.matches) == 0 {
-		os.Exit(0) // nothing to do anymore
-	}
+		if len(v.matches) == 0 {
+			os.Exit(1)
+		}
 
-	// Execute the specified command and/or jump directly into the
-	// interactive shell.
-	if haveToRunCommand {
+		// Execute the specified command and/or jump directly into the
+		// interactive shell.
 		v.commandParse()
 		v.waiter.Wait()
 		os.Exit(0)
 	}
 
-	// Last resort, print all matches.
-	if len(v.matches) > 0 {
-		v.commandPrintMatches([]int{})
+	v.waiter.Add(1)
+	v.grep(args)
+	v.cacheWrite() // this runs in the background
+
+	if len(v.matches) == 0 {
+		v.waiter.Wait()
+		os.Exit(1)
 	}
 
+	// Last resort, print all matches.
+	v.commandPrintMatches([]int{})
 	v.waiter.Wait()
 }
 
