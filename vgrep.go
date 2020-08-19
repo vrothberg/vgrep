@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -73,6 +74,13 @@ func main() {
 		err error
 		v   vgrep
 	)
+
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, os.Interrupt)
+	go func() {
+		for range sc {
+		}
+	}()
 
 	// Unknown flags will be ignored and stored in args to further pass them
 	// to (git) grep.
