@@ -75,6 +75,8 @@ func main() {
 		v   vgrep
 	)
 
+	// vgrep must not be terminated with SIGINT since less pager must be
+	// terminated before vgrep. Ignore SIGINT.
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, os.Interrupt)
 	go func() {
