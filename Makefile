@@ -2,9 +2,12 @@ export GOPROXY=https://proxy.golang.org
 
 SHELL= /bin/bash
 GO ?= go
+GOPATH := $(shell $(GO) env GOPATH)
+GOBIN := $(shell $(GO) env GOBIN)
 BUILD_DIR := ./build
 PREFIX := /usr/local
 BIN_DIR := $(PREFIX)/bin/
+MAN_DIR := ${PREFIX}/share/man
 NAME := vgrep
 PROJECT := github.com/vrothberg/vgrep
 VERSION := $(shell cat ./VERSION)
@@ -24,6 +27,15 @@ COVERAGE_PROFILE ?= $(shell pwd)/coverage.txt
 export COVERAGE_PATH
 export COVERAGE_PROFILE
 $(shell mkdir -p ${COVERAGE_PATH})
+
+ifeq ($(GOBIN),)
+	GOBIN := $(GOPATH)/bin
+endif
+
+GOMD2MAN := $(shell command -v go-md2man)
+
+MANPAGES_MD := $(wildcard docs/*.md)
+MANPAGES := $(MANPAGES_MD:%.md=%)
 
 all: check build
 
@@ -51,7 +63,7 @@ release: $(GO_SRC)
 
 .PHONY: clean
 clean:
-	rm -rf $(BUILD_DIR)
+	rm -rf $(BUILD_DIR) docs/*.1
 
 .PHONY: deps
 deps:
@@ -89,10 +101,20 @@ vendor:
 	curl -L https://github.com/BurntSushi/ripgrep/releases/download/12.0.1/ripgrep-12.0.1-x86_64-unknown-linux-musl.tar.gz | tar xz
 	mkdir -p ./test/bin && mv ripgrep-12.0.1-x86_64-unknown-linux-musl/rg ./test/bin/ && rm -rf ripgrep-12.0.1-x86_64-unknown-linux-musl
 
+.install.go-md2man:
+ifeq ($(GOMD2MAN),)
+	$(GO) get github.com/cpuguy83/go-md2man
+GOMD2MAN := $(GOBIN)/go-md2man
+endif
+
 .PHONY: install
-install:
+install: install-docs
 	cp $(BUILD_DIR)/$(NAME) $(BIN_DIR)
 	chmod 755 $(BIN_DIR)/$(NAME)
+
+.PHONY: install-docs
+install-docs: docs
+	sudo cp docs/*.1 ${MAN_DIR}/man1/
 
 .PHONY: uninstall
 uninstall:
@@ -118,3 +140,9 @@ container-release: container-image
 .PHONY: container-shell
 container-shell: container-image
 	$(CONTAINER_RUNTIME) $(CONTAINER_RUNCMD) -it $(CONTAINER_IMAGE) sh
+
+$(MANPAGES): %:%.md
+	sed -e 's/\((vgrep.*\.md)\)//' -e 's/\[\(vgrep.*\)\]/\1/' $<  | $(GOMD2MAN) -in /dev/stdin -out $@
+
+.PHONY: docs
+docs: $(MANPAGES)
