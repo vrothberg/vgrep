@@ -1,5 +1,7 @@
 % VGREP(1)
 
+% VGREP(1) 
+
 ## NAME
 
 vgrep -- a user-friendly pager for grep
