@@ -32,10 +32,10 @@ ifeq ($(GOBIN),)
 	GOBIN := $(GOPATH)/bin
 endif
 
-GOMD2MAN := $(shell command -v go-md2man)
+GOMD2MAN ?= $(shell command -v go-md2man || echo '$(GOBIN)/go-md2man')
 
-MANPAGES_MD := $(wildcard docs/*.md)
-MANPAGES := $(MANPAGES_MD:%.md=%)
+MANPAGES_MD = $(wildcard docs/*.md)
+MANPAGES ?= $(MANPAGES_MD:%.md=%)
 
 all: check build
 
@@ -104,7 +104,6 @@ vendor:
 .install.go-md2man:
 ifeq ($(GOMD2MAN),)
 	$(GO) get github.com/cpuguy83/go-md2man
-GOMD2MAN := $(GOBIN)/go-md2man
 endif
 
 .PHONY: install
