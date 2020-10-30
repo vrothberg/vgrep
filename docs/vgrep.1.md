@@ -35,6 +35,11 @@ The default editor of vgrep is `vim` with the default flag to open a file at a s
 
 Note that `vgrep` does not allow for searching and opening files at the same time. For instance, `vgrep --show=files text` should be split in two commands: `vgrep text` and `vgrep --show=files`.
 
+### IDE Support
+
+Note that if you run `vgrep` inside a terminal of VSCode or Goland, the format of listed files changes to "$PATH:$LINE" to allow for opening the matches in the editor via a simple mouse click.
+
+
 ## Interactive Shell
 
 Once vgreped, you can perform certain operations on the results such as limiting the range of indexed matches, listing matching files and directories and more.
