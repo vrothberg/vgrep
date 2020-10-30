@@ -234,6 +234,11 @@ func isVscode() bool {
 	return os.Getenv("TERM_PROGRAM") == "vscode"
 }
 
+// isGoland checks if the terminal is running inside of goland or possible other JetBrains IDEs.
+func isGoland() bool {
+	return strings.Contains(os.Getenv("TERMINAL_EMULATOR"), "JetBrains")
+}
+
 // grep (git) greps with the specified args and stores the results in v.matches.
 func (v *vgrep) grep(args []string) {
 	var cmd []string
@@ -777,13 +782,14 @@ func (v *vgrep) commandPrintMatches(indices []int) bool {
 		toPrint = append(toPrint, []string{"Index", "File", "Line", "Content"})
 	}
 
-	isVscode := isVscode()
+	inIDE := isVscode() || isGoland()
 	for _, i := range indices {
-		if isVscode {
-			// If we're running inside a vscode terminal, append the line to the
-			// file path, so we can quick jump to the specific location.  Note
-			// that dancing around with the indexes below is intentional - ugly
-			// but fast.
+		if inIDE {
+			// If we're running inside an IDE's terminal, append
+			// the line to the file path, so we can quick jump to
+			// the specific location.  Note that dancing around
+			// with the indexes below is intentional - ugly but
+			// fast.
 			toPrint = append(toPrint, []string{v.matches[i][0], v.matches[i][1] + ":" + v.matches[i][2], v.matches[i][2], v.matches[i][3]})
 		} else {
 			toPrint = append(toPrint, v.matches[i])
