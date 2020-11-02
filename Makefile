@@ -108,12 +108,13 @@ endif
 
 .PHONY: install
 install: install-docs
-	cp $(BUILD_DIR)/$(NAME) $(BIN_DIR)
-	chmod 755 $(BIN_DIR)/$(NAME)
+	install -d -m 755 $(BIN_DIR)
+	install -m 755 $(BUILD_DIR)/$(NAME) $(BIN_DIR)
 
 .PHONY: install-docs
 install-docs: docs
-	sudo cp docs/*.1 ${MAN_DIR}/man1/
+	install -d -m 755 ${MAN_DIR}/man1
+	install -m 644 docs/*.1 ${MAN_DIR}/man1/
 
 .PHONY: uninstall
 uninstall:
