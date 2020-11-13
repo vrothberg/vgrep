@@ -18,10 +18,18 @@ load helpers
 	run_vgrep --no-git f
 	[ "$status" -eq 0 ]
 	[[ ${lines[0]} =~ "0" ]]
+
+	run_vgrep
+	[ "$status" -eq 0 ]
+	[[ ${lines[0]} =~ "0" ]]
 }
 
 @test "Simple search and --no-ripgrep" {
 	run_vgrep --no-ripgrep f
+	[ "$status" -eq 0 ]
+	[[ ${lines[0]} =~ "0" ]]
+
+	run_vgrep
 	[ "$status" -eq 0 ]
 	[[ ${lines[0]} =~ "0" ]]
 }
@@ -30,16 +38,28 @@ load helpers
 	run_vgrep --no-git --no-ripgrep f
 	[ "$status" -eq 0 ]
 	[[ ${lines[0]} =~ "0" ]]
+
+	run_vgrep
+	[ "$status" -eq 0 ]
+	[[ ${lines[0]} =~ "0" ]]
 }
 
 @test "Simple search and --no-header" {
 	run_vgrep --no-header f
 	[ "$status" -eq 0 ]
 	[[ ${lines[0]} =~ "0" ]]
+
+	run_vgrep
+	[ "$status" -eq 0 ]
+	[[ ${lines[0]} =~ "0" ]]
 }
 
 @test "Simple search and --no-less" {
 	run_vgrep --no-less f
+	[ "$status" -eq 0 ]
+	[[ ${lines[0]} =~ "0" ]]
+
+	run_vgrep --no-less
 	[ "$status" -eq 0 ]
 	[[ ${lines[0]} =~ "0" ]]
 }
