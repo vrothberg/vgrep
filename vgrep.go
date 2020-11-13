@@ -137,9 +137,11 @@ func main() {
 			os.Exit(1)
 		}
 
-		// Execute the specified command and/or jump directly into the
-		// interactive shell.
-		v.commandParse()
+		if haveToRunCommand {
+			v.commandParse()
+		} else {
+			v.commandPrintMatches([]int{})
+		}
 		v.waiter.Wait()
 		os.Exit(0)
 	}
