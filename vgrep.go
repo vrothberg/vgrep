@@ -702,46 +702,40 @@ func (v *vgrep) dispatchCommand(input string) bool {
 		return false
 	}
 
-	if command == "?" {
+	switch command {
+	case "?":
 		return v.commandPrintHelp()
-	}
 
-	if command == "c" || command == "context" {
+	case "c", "context":
 		if context == -1 {
 			context = 5
 		}
 		return v.commandPrintContextLines(indices, context)
-	}
 
-	if command == "d" || command == "delete" {
+	case "d", "delete":
 		if len(indices) == 0 {
 			fmt.Println("delete requires specified selectors")
 			return false
 		}
 		return v.commandDelete(indices)
-	}
 
-	if command == "k" || command == "keep" {
+	case "k", "keep":
 		if len(indices) == 0 {
 			fmt.Println("keep requires specified selectors")
 			return false
 		}
 		return v.commandKeep(indices)
-	}
 
-	if command == "f" || command == "files" {
+	case "f", "files":
 		return v.commandListFiles(indices)
-	}
 
-	if command == "p" || command == "print" {
+	case "p", "print":
 		return v.commandPrintMatches(indices)
-	}
 
-	if command == "q" || command == "quit" {
+	case "q", "quit":
 		return true
-	}
 
-	if command == "s" || command == "show" {
+	case "s", "show":
 		if len(indices) == 0 {
 			fmt.Println("show requires specified selectors")
 		} else {
@@ -750,14 +744,14 @@ func (v *vgrep) dispatchCommand(input string) bool {
 			}
 		}
 		return false
-	}
 
-	if command == "t" || command == "tree" {
+	case "t", "tree":
 		return v.commandListTree(indices)
-	}
 
-	fmt.Printf("unsupported command %q\n", command)
-	return false
+	default:
+		fmt.Printf("unsupported command %q\n", command)
+		return false
+	}
 }
 
 // commandPrintHelp prints the help/usage message for vgrep commands on stdout.
