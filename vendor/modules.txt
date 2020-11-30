@@ -6,7 +6,7 @@ github.com/mattn/go-runewidth
 github.com/mattn/go-shellwords
 # github.com/nightlyone/lockfile v1.0.0
 github.com/nightlyone/lockfile
-# github.com/peterh/liner v1.2.0
+# github.com/peterh/liner v1.2.1
 github.com/peterh/liner
 # github.com/sirupsen/logrus v1.7.0
 github.com/sirupsen/logrus
