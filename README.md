@@ -73,3 +73,20 @@ vgrep supports the following commands:
 
 ## Files
 ![](screenshots/vgrep-files.png)
+
+## fzf
+
+![](https://user-images.githubusercontent.com/7258858/103111382-b00c7f80-464c-11eb-9e47-c36ed89253a1.png)
+
+Running vgrep twice to open an editor is not ideal. The below function uses [fzf](https://github.com/junegunn/fzf) to iteratively search with vgrep and open your editor with one enter at the correct line.
+To use it add the following function to your ``.bashrc`` and install fzf alongside vgrep and ripgrep.
+
+```shell
+vgrep() {
+  INITIAL_QUERY="$1"
+  VGREP_PREFIX="vgrep --no-header "
+  FZF_DEFAULT_COMMAND="$VGREP_PREFIX '$INITIAL_QUERY'" \
+  | fzf --bind "change:reload:$VGREP_PREFIX {q} || true" --phony --tac --query "$INITIAL_QUERY" |
+  | awk '{print $1}' | xargs -I{} -o vgrep --show {}
+}
+```
