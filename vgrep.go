@@ -781,11 +781,15 @@ func (v *vgrep) commandPrintMatches(indices []int) bool {
 		return false
 	}
 
+	inIDE := isVscode() || isGoland()
 	if !v.NoHeader {
-		toPrint = append(toPrint, []string{"Index", "File", "Line", "Content"})
+		if !inIDE {
+			toPrint = append(toPrint, []string{"Index", "File", "Line", "Content"})
+		} else {
+			toPrint = append(toPrint, []string{"File", "Index", "Line", "Content"})
+		}
 	}
 
-	inIDE := isVscode() || isGoland()
 	for _, i := range indices {
 		if inIDE {
 			// If we're running inside an IDE's terminal, append
@@ -793,16 +797,21 @@ func (v *vgrep) commandPrintMatches(indices []int) bool {
 			// the specific location.  Note that dancing around
 			// with the indexes below is intentional - ugly but
 			// fast.
-			toPrint = append(toPrint, []string{v.matches[i][0], v.matches[i][1] + ":" + v.matches[i][2], v.matches[i][2], v.matches[i][3]})
+			toPrint = append(toPrint, []string{v.matches[i][1] + ":" + v.matches[i][2], v.matches[i][0], v.matches[i][2], v.matches[i][3]})
 		} else {
 			toPrint = append(toPrint, v.matches[i])
 		}
 	}
 
 	cw := colwriter.New(4)
+	if inIDE {
+		cw.Colors = []ansi.COLOR{ansi.BLUE, ansi.MAGENTA, ansi.GREEN, ansi.DEFAULT}
+		cw.Padding = []colwriter.PaddingFunc{colwriter.PadRight, colwriter.PadLeft, colwriter.PadLeft, colwriter.PadNone}
+	} else {
+		cw.Colors = []ansi.COLOR{ansi.MAGENTA, ansi.BLUE, ansi.GREEN, ansi.DEFAULT}
+		cw.Padding = []colwriter.PaddingFunc{colwriter.PadLeft, colwriter.PadRight, colwriter.PadLeft, colwriter.PadNone}
+	}
 	cw.Headers = true && !v.NoHeader
-	cw.Colors = []ansi.COLOR{ansi.MAGENTA, ansi.BLUE, ansi.GREEN, ansi.DEFAULT}
-	cw.Padding = []colwriter.PaddingFunc{colwriter.PadLeft, colwriter.PadRight, colwriter.PadLeft, colwriter.PadNone}
 	cw.UseLess = !v.NoLess
 	cw.Trim = []bool{false, false, false, true}
 
