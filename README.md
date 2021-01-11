@@ -78,7 +78,7 @@ vgrep supports the following commands:
 
 ![](https://user-images.githubusercontent.com/7258858/103111382-b00c7f80-464c-11eb-9e47-c36ed89253a1.png)
 
-Running vgrep twice to open an editor is not ideal. The below function uses [fzf](https://github.com/junegunn/fzf) to iteratively search with vgrep and open your editor with one enter at the correct line.
+If you desire a more interactive experience than running vgrep twice to first search and then to open an editor, you may have a look at fzf. The below function uses [fzf](https://github.com/junegunn/fzf) to interactively search with vgrep and open your editor with one enter at the correct line.
 To use it add the following function to your ``.bashrc`` and install fzf alongside vgrep and ripgrep.
 
 ```shell
