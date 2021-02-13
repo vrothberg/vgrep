@@ -1,6 +1,6 @@
 package main
 
-// (c) 2015-2020 Valentin Rothberg <valentin@rothberg.email>
+// (c) 2015-2021 Valentin Rothberg <valentin@rothberg.email>
 //
 // Licensed under the terms of the GNU GPL License version 3.
 
@@ -30,6 +30,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/vrothberg/vgrep/internal/ansi"
 	"github.com/vrothberg/vgrep/internal/colwriter"
+	"golang.org/x/term"
 )
 
 // cliArgs passed to go-flags
@@ -799,11 +800,16 @@ func (v *vgrep) commandPrintMatches(indices []int) bool {
 		}
 	}
 
+	useLess := !v.NoLess
+	if !term.IsTerminal(int(os.Stdout.Fd())) {
+		useLess = false
+	}
+
 	cw := colwriter.New(4)
 	cw.Headers = true && !v.NoHeader
 	cw.Colors = []ansi.COLOR{ansi.MAGENTA, ansi.BLUE, ansi.GREEN, ansi.DEFAULT}
 	cw.Padding = []colwriter.PaddingFunc{colwriter.PadLeft, colwriter.PadRight, colwriter.PadLeft, colwriter.PadNone}
-	cw.UseLess = !v.NoLess
+	cw.UseLess = useLess
 	cw.Trim = []bool{false, false, false, true}
 
 	cw.Open()
