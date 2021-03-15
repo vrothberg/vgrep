@@ -6,7 +6,7 @@ require (
 	github.com/mattn/go-shellwords v1.0.11
 	github.com/nightlyone/lockfile v1.0.0
 	github.com/peterh/liner v1.2.1
-	github.com/sirupsen/logrus v1.8.0
+	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.4.0 // indirect
 	golang.org/x/sys v0.0.0-20200509044756-6aff5f38e54f // indirect
 	golang.org/x/term v0.0.0-20201117132131-f5c789dd3221
