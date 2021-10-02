@@ -17,6 +17,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"runtime/pprof"
 	"sort"
 	"strconv"
 	"strings"
@@ -35,14 +36,15 @@ import (
 
 // cliArgs passed to go-flags
 type cliArgs struct {
-	Debug       bool   `short:"d" long:"debug" description:"Verbose debug logging"`
-	Interactive bool   `long:"interactive" description:"Enter interactive shell"`
-	NoGit       bool   `long:"no-git" description:"Use grep instead of git-grep"`
-	NoRipgrep   bool   `long:"no-ripgrep" description:"Do not use ripgrep"`
-	NoHeader    bool   `long:"no-header" description:"Do not print pretty headers"`
-	NoLess      bool   `long:"no-less" description:"Use stdout instead of less"`
-	Show        string `short:"s" long:"show" description:"Show specified matches or open shell" value-name:"SELECTORS"`
-	Version     bool   `short:"v" long:"version" description:"Print version number"`
+	Debug         bool   `short:"d" long:"debug" description:"Verbose debug logging"`
+	Interactive   bool   `long:"interactive" description:"Enter interactive shell"`
+	MemoryProfile string `long:"memory-profile" description:"Write a memory profile to the specified path"`
+	NoGit         bool   `long:"no-git" description:"Use grep instead of git-grep"`
+	NoRipgrep     bool   `long:"no-ripgrep" description:"Do not use ripgrep"`
+	NoHeader      bool   `long:"no-header" description:"Do not print pretty headers"`
+	NoLess        bool   `long:"no-less" description:"Use stdout instead of less"`
+	Show          string `short:"s" long:"show" description:"Show specified matches or open shell" value-name:"SELECTORS"`
+	Version       bool   `short:"v" long:"version" description:"Print version number"`
 }
 
 // vgrep stores state and the user-specified command-line arguments.
@@ -91,6 +93,32 @@ func main() {
 	args, err := parser.ParseArgs(os.Args[1:])
 	if err != nil {
 		os.Exit(1)
+	}
+
+	if v.MemoryProfile != "" {
+		// Same value as the default in github.com/pkg/profile.
+		runtime.MemProfileRate = 4096
+		if rate := os.Getenv("MemProfileRate"); rate != "" {
+			r, err := strconv.Atoi(rate)
+			if err != nil {
+				logrus.Errorf("%v", err)
+				os.Exit(1)
+			}
+			runtime.MemProfileRate = r
+		}
+		defer func() { // Write the profile at the end
+			f, err := os.Create(v.MemoryProfile)
+			if err != nil {
+				logrus.Errorf("Creating memory profile: %v", err)
+				return
+			}
+			defer f.Close()
+			runtime.GC() // get up-to-date GC statistics
+			if err := pprof.WriteHeapProfile(f); err != nil {
+				logrus.Errorf("Writing memory profile: %v", err)
+				return
+			}
+		}()
 	}
 
 	if v.Version {
