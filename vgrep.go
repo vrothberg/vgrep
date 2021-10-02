@@ -92,6 +92,7 @@ func main() {
 	parser := flags.NewParser(&v, flags.Default|flags.IgnoreUnknown)
 	args, err := parser.ParseArgs(os.Args[1:])
 	if err != nil {
+		logrus.Errorf("%v", err)
 		os.Exit(1)
 	}
 
