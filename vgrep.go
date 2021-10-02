@@ -7,7 +7,6 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -25,6 +24,7 @@ import (
 	"time"
 
 	"github.com/jessevdk/go-flags"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/mattn/go-shellwords"
 	"github.com/nightlyone/lockfile"
 	"github.com/peterh/liner"
@@ -33,6 +33,9 @@ import (
 	"github.com/vrothberg/vgrep/internal/colwriter"
 	"golang.org/x/term"
 )
+
+// Noticeably faster than the standard lib and battle tested.
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 // cliArgs passed to go-flags
 type cliArgs struct {
