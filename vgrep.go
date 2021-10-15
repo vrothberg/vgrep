@@ -95,7 +95,8 @@ func main() {
 	parser := flags.NewParser(&v, flags.Default|flags.IgnoreUnknown)
 	args, err := parser.ParseArgs(os.Args[1:])
 	if err != nil {
-		logrus.Errorf("%v", err)
+		// Don't print the error to make sure the help message is printed once.
+		// In other words, let's rely on the parser to print errors.
 		os.Exit(1)
 	}
 
