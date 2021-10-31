@@ -257,12 +257,19 @@ func (v *vgrep) ripgrepInstalled() bool {
 
 func (v *vgrep) getGrepType() (grepType string) {
 	out, _ := v.runCommand([]string{"grep", "--version"}, "")
+	if len(out) == 0 {
+		return
+	}
 	versionString := out[0]
 	// versionString = "grep (BSD grep) 2.5.1-FreeBSD"
 	// versionString = "grep (BSD grep, GNU compatible) 2.6.0-FreeBSD"
 	versionRegex := regexp.MustCompile(`\(([[:alpha:]]+) grep`)
 	// versionRegex matches to ["(BSD grep)", "BSD"], return "BSD"
-	grepType = versionRegex.FindStringSubmatch(versionString)[1]
+	submatch := versionRegex.FindStringSubmatch(versionString)
+	if len(out)  < 2 {
+		return
+	}
+	grepType = submatch[1]
 	return
 }
 
