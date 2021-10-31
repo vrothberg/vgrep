@@ -266,7 +266,7 @@ func (v *vgrep) getGrepType() (string) {
 	versionRegex := regexp.MustCompile(`\(([[:alpha:]]+) grep`)
 	// versionRegex matches to ["(BSD grep)", "BSD"], return "BSD"
 	submatch := versionRegex.FindStringSubmatch(versionString)
-	if len(out) < 2 {
+	if len(submatch) < 2 {
 		return ""
 	}
 	return submatch[1]
