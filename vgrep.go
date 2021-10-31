@@ -255,10 +255,10 @@ func (v *vgrep) ripgrepInstalled() bool {
 	return installed
 }
 
-func (v *vgrep) getGrepType() (grepType string) {
+func (v *vgrep) getGrepType() (string) {
 	out, _ := v.runCommand([]string{"grep", "--version"}, "")
 	if len(out) == 0 {
-		return
+		return ""
 	}
 	versionString := out[0]
 	// versionString = "grep (BSD grep) 2.5.1-FreeBSD"
@@ -266,11 +266,10 @@ func (v *vgrep) getGrepType() (grepType string) {
 	versionRegex := regexp.MustCompile(`\(([[:alpha:]]+) grep`)
 	// versionRegex matches to ["(BSD grep)", "BSD"], return "BSD"
 	submatch := versionRegex.FindStringSubmatch(versionString)
-	if len(out)  < 2 {
-		return
+	if len(out) < 2 {
+		return ""
 	}
-	grepType = submatch[1]
-	return
+	return submatch[1]
 }
 
 // isVscode checks if the terminal is running inside of vscode.
@@ -374,6 +373,9 @@ func (v *vgrep) splitMatch(match string, greptype string) (file, line, content s
 			return
 		}
 		err = fmt.Errorf("unexpected input")
+		return
+	default:
+		err = fmt.Errorf("unknown grep type %q", greptype)
 		return
 	}
 	return
