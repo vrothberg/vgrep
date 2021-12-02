@@ -49,6 +49,8 @@ load helpers
 	[ "$status" -eq 0 ]
 	run_vgrep -s d0,1-10,21,22,50
 	[ "$status" -eq 0 ]
+	run_vgrep -s dall
+	[ "$status" -eq 0 ]
 }
 
 @test "Show ?" {
