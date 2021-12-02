@@ -711,7 +711,7 @@ func (v *vgrep) dispatchCommand(input string) bool {
 	}
 
 	// normalize selector-only inputs (e.g., "1,2,3,5-10") to the show cmd
-	selectorRegexp := `( +all|[\d , -]+){0,1}`
+	selectorRegexp := `(\s*all|[\d , -]+){0,1}`
 	numRgx := regexp.MustCompile(`^` + selectorRegexp + `$`)
 	if numRgx.MatchString(input) {
 		input = "s " + input
