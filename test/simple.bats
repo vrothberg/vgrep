@@ -64,6 +64,12 @@ load helpers
 	[[ ${lines[0]} =~ "0" ]]
 }
 
+@test "Simple search and --files-with-matches" {
+	run_vgrep --files-with-matches Valentin vgrep.go
+	[ "$status" -eq 0 ]
+	[[ ${lines[0]} =~ "vgrep.go" ]]
+}
+
 # Check that all grep tools are used when expected
 
 @test "Search with ripgrep" {

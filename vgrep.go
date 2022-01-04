@@ -1,6 +1,6 @@
 package main
 
-// (c) 2015-2021 Valentin Rothberg <valentin@rothberg.email>
+// (c) 2015-2022 Valentin Rothberg <valentin@rothberg.email>
 //
 // Licensed under the terms of the GNU GPL License version 3.
 
@@ -40,6 +40,7 @@ var json = jsoniter.ConfigCompatibleWithStandardLibrary
 // cliArgs passed to go-flags
 type cliArgs struct {
 	Debug         bool   `short:"d" long:"debug" description:"Verbose debug logging"`
+	FilesOnly     bool   `short:"l" long:"files-with-matches" description:"Print matching files only"`
 	Interactive   bool   `long:"interactive" description:"Enter interactive shell"`
 	MemoryProfile string `long:"memory-profile" description:"Write a memory profile to the specified path"`
 	NoGit         bool   `long:"no-git" description:"Use grep instead of git-grep"`
@@ -255,7 +256,7 @@ func (v *vgrep) ripgrepInstalled() bool {
 	return installed
 }
 
-func (v *vgrep) getGrepType() (string) {
+func (v *vgrep) getGrepType() string {
 	out, _ := v.runCommand([]string{"grep", "--version"}, "")
 	if len(out) == 0 {
 		return ""
@@ -825,20 +826,34 @@ func (v *vgrep) commandPrintMatches(indices []int) bool {
 		return false
 	}
 
+	if v.FilesOnly {
+		visited := make(map[string]bool)
+		for _, i := range indices {
+			file := v.matches[i][1]
+			if _, exists := visited[file]; exists {
+				continue
+			}
+			visited[file] = true
+			fmt.Println(file)
+		}
+		return false
+	}
+
 	if !v.NoHeader {
 		toPrint = append(toPrint, []string{"Index", "File", "Line", "Content"})
 	}
 
 	inIDE := isVscode() || isGoland()
 	for _, i := range indices {
-		if inIDE {
+		switch {
+		case inIDE:
 			// If we're running inside an IDE's terminal, append
 			// the line to the file path, so we can quick jump to
 			// the specific location.  Note that dancing around
 			// with the indexes below is intentional - ugly but
 			// fast.
 			toPrint = append(toPrint, []string{v.matches[i][0], v.matches[i][1] + ":" + v.matches[i][2], v.matches[i][2], v.matches[i][3]})
-		} else {
+		default:
 			toPrint = append(toPrint, v.matches[i])
 		}
 	}
