@@ -300,7 +300,7 @@ func (v *vgrep) grep(args []string) {
 		env = "HOME="
 		cmd = []string{
 			"git", "-c", "color.grep.match=red bold",
-			"grep", "-z", "-In", "--color=always",
+			"grep", "-z", "-In", "--color=auto",
 		}
 		cmd = append(cmd, args...)
 		greptype = GITGrep
