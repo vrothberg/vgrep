@@ -103,7 +103,7 @@ vendor:
 
 .install.go-md2man:
 ifeq ($(GOMD2MAN),)
-	$(GO) get github.com/cpuguy83/go-md2man
+	$(GO) install github.com/cpuguy83/go-md2man
 endif
 
 .PHONY: install
