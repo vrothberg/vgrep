@@ -1,6 +1,7 @@
 module github.com/vrothberg/vgrep
 
 require (
+	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/json-iterator/go v1.1.12
 	github.com/kr/pretty v0.1.0 // indirect
