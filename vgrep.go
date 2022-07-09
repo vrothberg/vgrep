@@ -1079,7 +1079,7 @@ func (v *vgrep) commandShow(index int) bool {
 	var cmd *exec.Cmd
 	_, file := filepath.Split(editor[0])
 	switch file {
-	case "emacs", "emacsclient":
+	case "emacs", "emacsclient", "nano":
 		// emacs expects the line before the file
 		editor = append(editor, lFlag, path)
 	default:
