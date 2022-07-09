@@ -32,6 +32,7 @@ import (
 	"github.com/vrothberg/vgrep/internal/ansi"
 	"github.com/vrothberg/vgrep/internal/colwriter"
 	"golang.org/x/term"
+	"github.com/google/shlex"
 )
 
 // Noticeably faster than the standard lib and battle tested.
@@ -383,10 +384,13 @@ func (v *vgrep) splitMatch(match string, greptype string) (file, line, content s
 }
 
 // getEditor returns the EDITOR environment variable (default="vim").
-func (v *vgrep) getEditor() string {
-	editor := os.Getenv("EDITOR")
+func (v *vgrep) getEditor() []string {
+	editor, err := shlex.Split(os.Getenv("EDITOR"))
 	if len(editor) == 0 {
-		editor = "vim"
+		editor = []string{"vim"}
+	}
+	if err != nil {
+		logrus.Info("Error parsing EDITOR, falling back to `vim'")
 	}
 	return editor
 }
@@ -1069,16 +1073,17 @@ func (v *vgrep) commandShow(index int) bool {
 	logrus.Debugf("opening index %d via: %s %s %s", index, editor, path, lFlag)
 
 	var cmd *exec.Cmd
-	_, file := filepath.Split(editor)
+	_, file := filepath.Split(editor[0])
 	switch file {
 	case "emacs", "emacsclient":
 		// emacs expects the line before the file
-		cmd = exec.Command(editor, lFlag, path)
+		editor = append(editor, lFlag, path)
 	default:
 		// default to adding the line after the file
-		cmd = exec.Command(editor, path, lFlag)
+		editor = append(editor, path, lFlag)
 	}
 
+	cmd = exec.Command(editor[0], editor[1:]...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
