@@ -1,0 +1,4 @@
+#!/bin/sh
+
+echo "editor: $0"
+echo "args: $@"
