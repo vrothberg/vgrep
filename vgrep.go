@@ -408,6 +408,16 @@ func (v *vgrep) getEditorLineFlag() string {
 	return editor
 }
 
+// getEditorLineFlagReversed returns the EDITORLINEFLAGREVERSED
+// environment variable (default=false).
+func (v *vgrep) getEditorLineFlagReversed() bool {
+	order, err := strconv.ParseBool(os.Getenv("EDITORLINEFLAGREVERSED"))
+	if err != nil {
+		order = false
+	}
+	return order
+}
+
 // Create the lock file to guard against concurrent processes
 func (v *vgrep) makeLockFile() error {
 
@@ -1072,21 +1082,27 @@ func (v *vgrep) commandShow(index int) bool {
 		return false
 	}
 
+	lFlag_reversed := v.getEditorLineFlagReversed()
+	if !lFlag_reversed {
+		_, file := filepath.Split(editor[0])
+		switch file {
+		case "emacs", "emacsclient", "nano":
+			lFlag_reversed = true
+		default:
+			// leave flag unchanged if already set
+		}
+	}
+
 	lFlag := fmt.Sprintf("%s%d", v.getEditorLineFlag(), line)
 
 	logrus.Debugf("opening index %d via: %s %s %s", index, editor, path, lFlag)
 
 	var cmd *exec.Cmd
-	_, file := filepath.Split(editor[0])
-	switch file {
-	case "emacs", "emacsclient", "nano":
-		// emacs expects the line before the file
+	if lFlag_reversed {
 		editor = append(editor, lFlag, path)
-	default:
-		// default to adding the line after the file
+	} else {
 		editor = append(editor, path, lFlag)
 	}
-
 	cmd = exec.Command(editor[0], editor[1:]...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
