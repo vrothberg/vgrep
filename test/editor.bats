@@ -54,3 +54,15 @@ load helpers
 	[[ ${args[0]} =~ .*/editor.bats ]]
 	[[ ${args[1]} == -l5 ]]
 }
+
+@test "EDITORLINEFLAGREVERSED" {
+	run_vgrep test test/editor.bats
+	[ "$status" -eq 0 ]
+	unset EDITOR
+	export EDITORLINEFLAGREVERSED=1
+	run_vgrep -s 0
+	[ "$status" -eq 0 ]
+	args=(${lines[1]})
+	[[ ${args[0]} == +5 ]]
+	[[ ${args[1]} =~ .*/editor.bats ]]
+}
