@@ -8,8 +8,8 @@ load helpers
 	unset EDITOR
 	run_vgrep -s 0
 	[ "$status" -eq 0 ]
-	[[ ${lines[0]/editor: /} =~ .*/vim ]]
-	args=(${lines[1]/args: /})
+	[[ ${lines[0]} =~ .*/vim ]]
+	args=(${lines[1]})
 	[[ ${args[0]} =~ .*/editor.bats ]]
 	[[ ${args[1]} == +5 ]]	# first occurence of 'test' is on line 5
 }
@@ -22,8 +22,8 @@ load helpers
 	    EDITOR=$cmd
 	    run_vgrep -s 0
 	    [ "$status" -eq 0 ]
-	    [[ ${lines[0]/editor: /} =~ .*/$cmd ]]
-	    args=(${lines[1]/args: /})
+	    [[ ${lines[0]} =~ .*/$cmd ]]
+	    args=(${lines[1]})
 	    [[ ${args[0]} == +5 ]]
 	    [[ ${args[1]} =~ .*/editor.bats ]]
 	done
@@ -35,8 +35,8 @@ load helpers
 	EDITOR="emacs -nw"
 	run_vgrep -s 0
 	[ "$status" -eq 0 ]
-	[[ ${lines[0]/editor: /} =~ .*/emacs ]]
-	args=(${lines[1]/args: /})
+	[[ ${lines[0]} =~ .*/emacs ]]
+	args=(${lines[1]})
 	[[ ${args[0]} == -nw ]]
 	[[ ${args[1]} == +5 ]]
 	[[ ${args[2]} =~ .*/editor.bats ]]
@@ -49,8 +49,8 @@ load helpers
 	export EDITORLINEFLAG=-l
 	run_vgrep -s 0
 	[ "$status" -eq 0 ]
-	[[ ${lines[0]/editor: /} =~ .*/kate ]]
-	args=(${lines[1]/args: /})
+	[[ ${lines[0]} =~ .*/kate ]]
+	args=(${lines[1]})
 	[[ ${args[0]} =~ .*/editor.bats ]]
 	[[ ${args[1]} == -l5 ]]
 }
