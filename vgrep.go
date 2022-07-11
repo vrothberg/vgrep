@@ -297,6 +297,10 @@ func (v *vgrep) grep(args []string) {
 		}
 		cmd = append(cmd, args...)
 		greptype = RIPGrep
+		config := os.Getenv("RIPGREP_CONFIG_PATH")
+		if len(config) != 0 {
+			env = "RIPGREP_CONFIG_PATH=" + config
+		}
 	} else if v.insideGitTree() && !v.NoGit {
 		env = "HOME="
 		cmd = []string{
