@@ -1,4 +1,4 @@
 #!/bin/sh
 
-echo "editor: $0"
-echo "args: $@"
+echo "$0"  # editor command
+echo "$@"  # command arguments
