@@ -19,7 +19,7 @@ load helpers
 	run_vgrep test test/editor.bats
 	[ "$status" -eq 0 ]
 	for cmd in emacs{,client} nano; do
-	    EDITOR=$cmd
+	    export EDITOR=$cmd
 	    run_vgrep -s 0
 	    [ "$status" -eq 0 ]
 	    [[ ${lines[0]} =~ .*/$cmd ]]
@@ -32,7 +32,7 @@ load helpers
 @test "EDITOR command with options" {
 	run_vgrep test test/editor.bats
 	[ "$status" -eq 0 ]
-	EDITOR="emacs -nw"
+	export EDITOR="emacs -nw"
 	run_vgrep -s 0
 	[ "$status" -eq 0 ]
 	[[ ${lines[0]} =~ .*/emacs ]]
@@ -45,7 +45,7 @@ load helpers
 @test "EDITORLINEFLAG" {
 	run_vgrep test test/editor.bats
 	[ "$status" -eq 0 ]
-	EDITOR=kate
+	export EDITOR=kate
 	export EDITORLINEFLAG=-l
 	run_vgrep -s 0
 	[ "$status" -eq 0 ]
