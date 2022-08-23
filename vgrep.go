@@ -23,6 +23,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/shlex"
 	"github.com/jessevdk/go-flags"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/mattn/go-shellwords"
@@ -32,7 +33,6 @@ import (
 	"github.com/vrothberg/vgrep/internal/ansi"
 	"github.com/vrothberg/vgrep/internal/colwriter"
 	"golang.org/x/term"
-	"github.com/google/shlex"
 )
 
 // Noticeably faster than the standard lib and battle tested.
@@ -1002,10 +1002,10 @@ func (v *vgrep) commandDelete(indices []int) bool {
 
 	for offset, idx := range indices {
 		logrus.Debugf("deleting index %d", idx)
-		for i := idx + 1; i < len(v.matches); i++ {
+		index := idx - offset
+		for i := index; i < len(v.matches); i++ {
 			v.matches[i][0] = strconv.Itoa(i - 1)
 		}
-		index := idx - offset
 		v.matches = append(v.matches[:index], v.matches[index+1:]...)
 	}
 
