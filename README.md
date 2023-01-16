@@ -90,3 +90,25 @@ vgrep() {
   | awk '{print $1}' | xargs -I{} -o vgrep --show {}
 }
 ```
+
+### For fish shell
+
+The below version pipes the result of the initial query with `vgrep` to `fzf` to allow further selection among the results. 
+
+```fish
+function vgf --wraps=vgrep --description 'vgrep search with fzf'
+    set -f INITIAL_QUERY $argv[1]
+    vgrep --no-header $INITIAL_QUERY | fzf --ansi --bind "Ctrl-d:half-page-down,Ctrl-u:half-page-up" | awk '{print $1}' | xargs -I{} -o vgrep --show {}
+end
+```
+
+To have a variant, which restarts the search with `vgrep` on entering a new query, use the below version.
+
+```fish
+function vgF --wraps=vgrep --description 'vgrep search with fzf'
+    set -f INITIAL_QUERY $argv[1]
+    FZF_DEFAULT_COMMAND="vgrep --no-header $INITIAL_QUERY" fzf --bind "Ctrl-d:half-page-down,Ctrl-u:half-page-up,change:reload:vgrep --no-header {q} || true" --ansi --phony --tac --query $INITIAL_QUERY | awk '{print $1}' | xargs -I{} -o vgrep --show {}
+end
+```
+
+For further details on use of `functions` with `fish` shell, see [here](https://fishshell.com/docs/current/language.html#syntax-function). 
