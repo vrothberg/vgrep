@@ -92,7 +92,7 @@ vendor:
 
 .install.tools:
 	export \
-		VERSION=v1.36.0 \
+		VERSION=v1.51.2 \
 		URL=https://raw.githubusercontent.com/golangci/golangci-lint \
 		BINDIR=${BUILD_DIR} && \
 	curl -sfL $$URL/$$VERSION/install.sh | sh -s $$VERSION
