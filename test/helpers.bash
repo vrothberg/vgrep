@@ -10,11 +10,12 @@ function random_string() {
 function run_vgrep() {
 	local args=""
 	if [[ -n "$COVERAGE" ]]; then
-		args="-test.coverprofile=coverprofile.integration.$(random_string 20) -test.outputdir=${COVERAGE_PATH} COVERAGE"
+		args="-test.coverprofile=coverprofile.integration.$(random_string 20) COVERAGE"
+		export GOCOVERDIR=${COVERAGE_PATH}
 	fi
 	run $VGREP $args "$@"
 	if [ "$status" -ne 0 ]; then
-		echo "$VGREP $args $*"
-		echo "$output"
+		echo "CLI: $VGREP $args $*"
+		echo "OUT: $output"
 	fi
 }

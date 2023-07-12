@@ -13,6 +13,7 @@ PROJECT := github.com/vrothberg/vgrep
 VERSION := $(shell cat ./VERSION)
 COMMIT := $(shell git rev-parse HEAD 2> /dev/null || true)
 CONTAINER_RUNTIME := $(shell command -v podman 2> /dev/null || echo docker)
+PATH := $(CURDIR)/test/bin:$(PATH)
 
 GO_SRC=$(shell find . -name \*.go)
 
@@ -78,11 +79,11 @@ test: test-integration
 
 .PHONY: test-integration
 test-integration:
-	export PATH=./test/bin:$$PATH; bats test/*.bats
+	bats test/*.bats
 
 .PHONY: test-integration.coverage
 test-integration.coverage:
-	export PATH=./test/bin:$$PATH; export COVERAGE=1; bats test/*.bats
+	export COVERAGE=1; bats test/*.bats
 
 .PHONY: vendor
 vendor:
@@ -92,14 +93,10 @@ vendor:
 
 .install.tools:
 	export \
-		VERSION=v1.51.2 \
+		VERSION=v1.53.3 \
 		URL=https://raw.githubusercontent.com/golangci/golangci-lint \
 		BINDIR=${BUILD_DIR} && \
 	curl -sfL $$URL/$$VERSION/install.sh | sh -s $$VERSION
-	VERSION=v1.1.0 ./hack/install_bats.sh
-
-	curl -L https://github.com/BurntSushi/ripgrep/releases/download/12.0.1/ripgrep-12.0.1-x86_64-unknown-linux-musl.tar.gz | tar xz
-	mkdir -p ./test/bin && mv ripgrep-12.0.1-x86_64-unknown-linux-musl/rg ./test/bin/ && rm -rf ripgrep-12.0.1-x86_64-unknown-linux-musl
 
 .install.go-md2man:
 ifeq ($(GOMD2MAN),)
