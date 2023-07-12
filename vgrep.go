@@ -8,7 +8,6 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -194,6 +193,7 @@ func main() {
 	// Last resort, print all matches.
 	v.commandPrintMatches([]int{})
 	v.waiter.Wait()
+	os.Exit(0)
 }
 
 // runCommand executes the program specified in args and returns the stdout as
@@ -575,7 +575,7 @@ func (v *vgrep) loadCache() error {
 		}
 	}()
 
-	file, err := ioutil.ReadFile(cache)
+	file, err := os.ReadFile(cache)
 	if err != nil {
 		return err
 	}
@@ -632,7 +632,7 @@ func shellCompleter(line string) (c []string) {
 			dir = arg
 			base = ""
 		}
-		files, err := ioutil.ReadDir(dir)
+		files, err := os.ReadDir(dir)
 		if err != nil {
 			return
 		}
