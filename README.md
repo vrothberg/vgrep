@@ -18,7 +18,7 @@ An example call may look as follows:
 
 ![](screenshots/vgrep-simple-search.png)
 
-By default, the output will be written to `less` to make browsing large amounts of data more comfortable. `vgrep --no-less` will write to stdout.
+By default, the output will be written to `less` to make browsing large amounts of data more comfortable. `vgrep --no-less` will write to stdout.  The path to the cache is `$LOCALAPPDATA/vgrep-cache/vgrep-go` on Windows and `$HOME/.cache/vgrep-go` on Unix systems.
 
 # Opening Matches
 vgrep can open the indexed file locations in an editor specified by the `EDITOR` environment variable. Opening one of the file locations from the previous example may look as follows:
