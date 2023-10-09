@@ -8,7 +8,7 @@ require (
 	github.com/nightlyone/lockfile v1.0.0
 	github.com/peterh/liner v1.2.2
 	github.com/sirupsen/logrus v1.9.3
-	golang.org/x/term v0.12.0
+	golang.org/x/term v0.13.0
 )
 
 require (
@@ -16,7 +16,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421 // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
-	golang.org/x/sys v0.12.0 // indirect
+	golang.org/x/sys v0.13.0 // indirect
 )
 
 go 1.19
