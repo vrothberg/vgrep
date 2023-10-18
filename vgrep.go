@@ -241,6 +241,10 @@ func (v *vgrep) insideGitTree() bool {
 	return inside
 }
 
+func (v *vgrep) isOpenBSD() bool {
+	return runtime.GOOS == "openbsd"
+}
+
 // ripgrepInstalled returns true if ripgrep is installed
 func (v *vgrep) ripgrepInstalled() bool {
 	out, err := exec.LookPath("rg")
@@ -310,6 +314,11 @@ func (v *vgrep) grep(args []string) {
 		}
 		cmd = append(cmd, args...)
 		greptype = GITGrep
+	} else if v.isOpenBSD() && v.getGrepType() == "" {
+		// grep --version = "grep version 0.9"
+		cmd = []string{"grep", "-ZHInr"}
+		cmd = append(cmd, args...)
+		greptype = BSDGrep
 	} else {
 		env = "GREP_COLORS='ms=01;31:mc=:sl=:cx=:fn=:ln=:se=:bn='"
 		cmd = []string{"grep", "-ZHInr", "--color=always"}
