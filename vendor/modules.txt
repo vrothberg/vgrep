@@ -25,7 +25,7 @@ github.com/nightlyone/lockfile
 # github.com/peterh/liner v1.2.2
 ## explicit
 github.com/peterh/liner
-# github.com/rivo/uniseg v0.4.4
+# github.com/rivo/uniseg v0.4.7
 ## explicit; go 1.18
 github.com/rivo/uniseg
 # github.com/sirupsen/logrus v1.9.3
