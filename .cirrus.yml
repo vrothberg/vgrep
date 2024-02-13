@@ -1,5 +1,5 @@
 container:
-  image: fedora:38
+  image: fedora:39
 
 env:
   GOPROXY: https://proxy.golang.org
