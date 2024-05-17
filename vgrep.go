@@ -54,10 +54,11 @@ type cliArgs struct {
 // vgrep stores state and the user-specified command-line arguments.
 type vgrep struct {
 	cliArgs
-	matches [][]string
-	workDir string
-	lock    lockfile.Lockfile
-	waiter  sync.WaitGroup
+	exitCode int
+	matches  [][]string
+	workDir  string
+	lock     lockfile.Lockfile
+	waiter   sync.WaitGroup
 }
 
 // the type of underlying grep program
@@ -169,6 +170,9 @@ func main() {
 		}
 
 		if len(v.matches) == 0 {
+			if v.exitCode != 0 {
+				os.Exit(v.exitCode)
+			}
 			os.Exit(1)
 		}
 
@@ -178,7 +182,7 @@ func main() {
 			v.commandPrintMatches([]int{})
 		}
 		v.waiter.Wait()
-		os.Exit(0)
+		os.Exit(v.exitCode)
 	}
 
 	v.waiter.Add(1)
@@ -187,13 +191,16 @@ func main() {
 
 	if len(v.matches) == 0 {
 		v.waiter.Wait()
+		if v.exitCode != 0 {
+			os.Exit(v.exitCode)
+		}
 		os.Exit(1)
 	}
 
 	// Last resort, print all matches.
 	v.commandPrintMatches([]int{})
 	v.waiter.Wait()
-	os.Exit(0)
+	os.Exit(v.exitCode)
 }
 
 // runCommand executes the program specified in args and returns the stdout as
@@ -212,13 +219,17 @@ func (v *vgrep) runCommand(args []string, env string) ([]string, error) {
 	err := cmd.Run()
 	if err != nil {
 		logrus.Debugf("error running command: %v", err)
-		errStr := err.Error()
-		if errStr == "exit status 1" {
-			logrus.Debug("ignoring error (no matches found)")
+
+		if exitError, ok := err.(*exec.ExitError); ok {
+			exitCode := exitError.ExitCode()
+			switch exitCode {
+			case 1:
+				logrus.Debug("ignoring error (no matches found)")
+			default:
+				logrus.Errorf("%s", strings.TrimSuffix(serr.String(), "\n"))
+				v.exitCode = exitCode
+			}
 			err = nil
-		} else {
-			spl := strings.Split(serr.String(), "\n")
-			err = fmt.Errorf("%s [%s]", spl[0], args[0])
 		}
 	}
 
