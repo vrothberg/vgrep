@@ -15,7 +15,9 @@ function run_vgrep() {
 	fi
 	run $VGREP $args "$@"
 	if [ "$status" -ne 0 ]; then
+		echo "-------------"
 		echo "CLI: $VGREP $args $*"
 		echo "OUT: $output"
+		echo "-------------"
 	fi
 }
