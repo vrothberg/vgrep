@@ -17,7 +17,7 @@ PATH := $(CURDIR)/test/bin:$(PATH)
 
 GO_SRC=$(shell find . -name \*.go)
 
-GO_BUILD=$(GO) build
+GO_BUILD=$(GO) build $(GO_BUILD_EXTRA_FLAGS)
 # Go module support: set `-mod=vendor` to use the vendored sources
 ifeq ($(shell go help mod >/dev/null 2>&1 && echo true), true)
 	GO_BUILD=GO111MODULE=on $(GO) build -mod=vendor
@@ -42,7 +42,7 @@ all: check build
 
 .PHONY: build
 build: $(GO_SRC)
-	$(GO_BUILD) -buildmode=pie -o $(BUILD_DIR)/$(NAME) -ldflags "-s -w -X main.version=${VERSION}-$(COMMIT)"
+	$(GO_BUILD) -o $(BUILD_DIR)/$(NAME) -ldflags "-s -w -X main.version=${VERSION}-$(COMMIT)"
 
 .PHONY: build.coverage
 build.coverage: $(GO_SRC)
