@@ -9,12 +9,15 @@ load helpers
 WONLY_FILE=test/search_files/wonly.txt
 
 function setup() {
+	if is_root; then
+		skip "Requires running as non-root"
+	fi
 	touch $WONLY_FILE
 	chmod 200 $WONLY_FILE
 }
 
 function teardown() {
-	rm $WONLY_FILE
+	rm -f $WONLY_FILE
 }
 
 @test "Search with permission error" {
