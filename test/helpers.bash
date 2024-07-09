@@ -21,3 +21,7 @@ function run_vgrep() {
 		echo "-------------"
 	fi
 }
+
+function is_root() {
+    [ "$(id -u)" -eq 0 ]
+}
