@@ -7,7 +7,7 @@ require (
 	github.com/mattn/go-shellwords v1.0.12
 	github.com/nightlyone/lockfile v1.0.0
 	github.com/peterh/liner v1.2.2
-	github.com/sirupsen/logrus v1.9.3
+	github.com/sirupsen/logrus v1.9.4
 	golang.org/x/term v0.39.0
 )
 
