@@ -21,9 +21,7 @@ jobs:
         make vendor
         ./hack/tree_status.sh
     - name: lint
-      run: |
-        make .install.tools
-        make check
+      run: make check
     - name: build
       run: |
         sudo apt-get -qq update

@@ -72,7 +72,7 @@ deps:
 
 .PHONY: check
 check: $(GO_SRC)
-	${BUILD_DIR}/golangci-lint run
+	$(GO) run github.com/golangci/golangci-lint/cmd/golangci-lint run
 
 .PHONY: test
 test: test-integration
@@ -92,11 +92,8 @@ vendor:
 	GO111MODULE=on go mod verify
 
 .install.tools:
-	export \
-		VERSION=v1.64.6 \
-		URL=https://raw.githubusercontent.com/golangci/golangci-lint \
-		BINDIR=${BUILD_DIR} && \
-	curl -sfL $$URL/$$VERSION/install.sh | sh -s $$VERSION
+	@echo "golangci-lint is now managed via go.mod and tools.go"
+	@echo "No installation needed - it will be automatically downloaded when running 'make check'"
 
 .install.go-md2man:
 ifeq ($(GOMD2MAN),)
