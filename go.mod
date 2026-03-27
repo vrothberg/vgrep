@@ -1,6 +1,7 @@
 module github.com/vrothberg/vgrep
 
 require (
+	github.com/cpuguy83/go-md2man v1.0.10
 	github.com/golangci/golangci-lint v1.64.8
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/jessevdk/go-flags v1.6.1
@@ -142,6 +143,7 @@ require (
 	github.com/raeperd/recvcheck v0.2.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
+	github.com/russross/blackfriday v1.5.2 // indirect
 	github.com/ryancurrah/gomodguard v1.3.5 // indirect
 	github.com/ryanrolds/sqlclosecheck v0.5.1 // indirect
 	github.com/sanposhiho/wastedassign/v2 v2.1.0 // indirect
