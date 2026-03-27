@@ -122,6 +122,10 @@ github.com/chavacava/garif
 # github.com/ckaznocha/intrange v0.3.0
 ## explicit; go 1.22
 github.com/ckaznocha/intrange
+# github.com/cpuguy83/go-md2man v1.0.10
+## explicit; go 1.12
+github.com/cpuguy83/go-md2man
+github.com/cpuguy83/go-md2man/md2man
 # github.com/curioswitch/go-reassign v0.3.0
 ## explicit; go 1.21
 github.com/curioswitch/go-reassign
@@ -686,6 +690,9 @@ github.com/rogpeppe/go-internal/internal/syscall/windows
 github.com/rogpeppe/go-internal/internal/syscall/windows/sysdll
 github.com/rogpeppe/go-internal/lockedfile
 github.com/rogpeppe/go-internal/lockedfile/internal/filelock
+# github.com/russross/blackfriday v1.5.2
+## explicit
+github.com/russross/blackfriday
 # github.com/ryancurrah/gomodguard v1.3.5
 ## explicit; go 1.22.0
 github.com/ryancurrah/gomodguard
