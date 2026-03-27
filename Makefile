@@ -1,6 +1,9 @@
 export GOPROXY=https://proxy.golang.org
 
 SHELL= /bin/bash
+.DELETE_ON_ERROR:
+.DEFAULT_GOAL := all
+
 GO ?= go
 GOPATH := $(shell $(GO) env GOPATH)
 GOBIN := $(shell $(GO) env GOBIN)
@@ -16,18 +19,12 @@ CONTAINER_RUNTIME := $(shell command -v podman 2> /dev/null || echo docker)
 PATH := $(CURDIR)/test/bin:$(PATH)
 
 GO_SRC=$(shell find . -name \*.go)
-
-GO_BUILD=$(GO) build $(GO_BUILD_EXTRA_FLAGS)
-# Go module support: set `-mod=vendor` to use the vendored sources
-ifeq ($(shell go help mod >/dev/null 2>&1 && echo true), true)
-	GO_BUILD=GO111MODULE=on $(GO) build -mod=vendor
-endif
+GO_BUILD=$(GO) build -mod=vendor
 
 COVERAGE_PATH ?= $(shell pwd)/.coverage
 COVERAGE_PROFILE ?= $(shell pwd)/coverage.txt
 export COVERAGE_PATH
 export COVERAGE_PROFILE
-$(shell mkdir -p ${COVERAGE_PATH})
 
 ifeq ($(GOBIN),)
 	GOBIN := $(GOPATH)/bin
@@ -46,6 +43,7 @@ build: $(GO_SRC)
 
 .PHONY: build.coverage
 build.coverage: $(GO_SRC)
+	@mkdir -p $(COVERAGE_PATH)
 	$(GO) test \
 		-covermode=count \
 		-coverpkg=./... \
@@ -87,18 +85,19 @@ test-integration.coverage:
 
 .PHONY: vendor
 vendor:
-	GO111MODULE=on go mod tidy
-	GO111MODULE=on go mod vendor
-	GO111MODULE=on go mod verify
+	go mod tidy
+	go mod vendor
+	go mod verify
+
+.PHONY: .install.tools .install.go-md2man
 
 .install.tools:
 	@echo "golangci-lint is now managed via go.mod and tools.go"
 	@echo "No installation needed - it will be automatically downloaded when running 'make check'"
 
 .install.go-md2man:
-ifeq ($(GOMD2MAN),)
-	$(GO) install github.com/cpuguy83/go-md2man
-endif
+	@echo "go-md2man is now managed via go.mod and tools.go"
+	@echo "No installation needed - it will be automatically downloaded when generating docs"
 
 .PHONY: install
 install: install-docs
@@ -136,7 +135,7 @@ container-shell: container-image
 	$(CONTAINER_RUNTIME) $(CONTAINER_RUNCMD) -it $(CONTAINER_IMAGE) sh
 
 $(MANPAGES): %:%.md
-	sed -e 's/\((vgrep.*\.md)\)//' -e 's/\[\(vgrep.*\)\]/\1/' $<  | $(GOMD2MAN) -in /dev/stdin -out $@
+	sed -e 's/\((vgrep.*\.md)\)//' -e 's/\[\(vgrep.*\)\]/\1/' $<  | $(GO) run github.com/cpuguy83/go-md2man -in /dev/stdin -out $@
 
 .PHONY: docs
 docs: $(MANPAGES)
