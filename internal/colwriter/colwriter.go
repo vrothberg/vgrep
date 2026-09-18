@@ -99,9 +99,9 @@ func (cw *ColWriter) Close() {
 	if !cw.opened {
 		panic("Close() on unopened ColWriter\n")
 	}
-	cw.writer.Flush()
+	_ = cw.writer.Flush()
 	if cw.UseLess {
-		cw.pipe.Close()
+		_ = cw.pipe.Close()
 		err := cw.cmd.Wait()
 		if err != nil {
 			panic(fmt.Sprintf("Could not execute less:%s\n", err))
@@ -115,7 +115,7 @@ func (cw *ColWriter) WriteString(str string) {
 	if !cw.opened {
 		panic("WriteString() on unopened ColWriter\n")
 	}
-	fmt.Fprintf(cw.writer, "%s", str)
+	_, _ = fmt.Fprintf(cw.writer, "%s", str)
 }
 
 // Write writes the data in rows in a pretty columnized format to cw's pipe.
@@ -139,7 +139,7 @@ func (cw *ColWriter) Write(rows [][]string) {
 			} else {
 				out += "\n"
 			}
-			fmt.Fprintf(cw.writer, "%s", out)
+			_, _ = fmt.Fprintf(cw.writer, "%s", out)
 		}
 		rows = rows[1:]
 	}
@@ -161,7 +161,7 @@ func (cw *ColWriter) Write(rows [][]string) {
 			} else {
 				out += "\n"
 			}
-			fmt.Fprintf(cw.writer, "%s", out)
+			_, _ = fmt.Fprintf(cw.writer, "%s", out)
 		}
 	}
 }

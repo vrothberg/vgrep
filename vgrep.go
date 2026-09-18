@@ -119,7 +119,7 @@ func main() {
 				logrus.Errorf("Creating memory profile: %v", err)
 				return
 			}
-			defer f.Close()
+			defer func() { _ = f.Close() }()
 			runtime.GC() // get up-to-date GC statistics
 			if err := pprof.WriteHeapProfile(f); err != nil {
 				logrus.Errorf("Writing memory profile: %v", err)
@@ -242,11 +242,7 @@ func (v *vgrep) runCommand(args []string, env string) ([]string, error) {
 func (v *vgrep) insideGitTree() bool {
 	cmd := []string{"git", "rev-parse", "--is-inside-work-tree"}
 	out, _ := v.runCommand(cmd, "")
-	inside := false
-
-	if len(out) > 0 && out[0] == "true" {
-		inside = true
-	}
+	inside := len(out) > 0 && out[0] == "true"
 
 	logrus.Debugf("insideGitTree() -> %v", inside)
 	return inside
@@ -262,11 +258,7 @@ func (v *vgrep) ripgrepInstalled() bool {
 	if err != nil {
 		logrus.Debug("error checking if ripgrep is installed")
 	}
-	installed := false
-
-	if len(out) > 0 {
-		installed = true
-	}
+	installed := len(out) > 0
 
 	logrus.Debugf("ripgrepInstalled() -> %v", installed)
 	return installed
@@ -602,7 +594,7 @@ func (v *vgrep) loadCache() error {
 
 	if err := json.Unmarshal(file, &v.matches); err != nil {
 		// if there's an error unmarshalling it, remove the cache file
-		os.Remove(cache)
+		_ = os.Remove(cache)
 		return err
 	}
 
@@ -673,7 +665,7 @@ func shellCompleter(line string) (c []string) {
 // prompt the user for commands if we're running in interactive mode.
 func (v *vgrep) commandParse() {
 	line := liner.NewLiner()
-	defer line.Close()
+	defer func() { _ = line.Close() }()
 	line.SetCtrlCAborts(true)
 	line.SetCompleter(shellCompleter)
 
@@ -681,7 +673,7 @@ func (v *vgrep) commandParse() {
 		usrInp, err := line.Prompt("Enter a vgrep command: ")
 		if err != nil {
 			// Either we hit an error or EOF (ctrl+d)
-			line.Close()
+			_ = line.Close()
 			fmt.Fprintf(os.Stderr, "error parsing user input: %v\n", err)
 			os.Exit(1)
 		}
@@ -949,7 +941,7 @@ func (v *vgrep) getContextLines(index int, numLines int) [][]string {
 		logrus.Warnf("error opening file %q: %v", path, err)
 		return nil
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	scanner := bufio.NewScanner(file)
 	counter := 0
