@@ -3,11 +3,12 @@ package rule
 import (
 	"fmt"
 	"go/ast"
+	"strconv"
 
 	"github.com/mgechev/revive/lint"
 )
 
-// DotImportsRule forbids . imports.
+// DotImportsRule forbids dot imports.
 type DotImportsRule struct {
 	allowedPackages allowPackages
 }
@@ -50,10 +51,13 @@ func (r *DotImportsRule) Configure(arguments lint.Arguments) error {
 		return fmt.Errorf("invalid argument to the dot-imports rule. Expecting a k,v map, got %T", arguments[0])
 	}
 
-	if allowedPkgArg, ok := args["allowedPackages"]; ok {
-		pkgs, ok := allowedPkgArg.([]any)
+	for k, v := range args {
+		if !isRuleOption(k, "allowedPackages") {
+			continue
+		}
+		pkgs, ok := v.([]any)
 		if !ok {
-			return fmt.Errorf("invalid argument to the dot-imports rule, []string expected. Got '%v' (%T)", allowedPkgArg, allowedPkgArg)
+			return fmt.Errorf("invalid argument to the dot-imports rule, []string expected. Got '%v' (%T)", v, v)
 		}
 		for _, p := range pkgs {
 			pkg, ok := p.(string)
@@ -91,7 +95,7 @@ func (w lintImports) Visit(_ ast.Node) ast.Visitor {
 type allowPackages map[string]struct{}
 
 func (ap allowPackages) add(pkg string) {
-	ap[fmt.Sprintf(`"%s"`, pkg)] = struct{}{} // import path strings are with double quotes
+	ap[strconv.Quote(pkg)] = struct{}{} // import path strings are with double quotes
 }
 
 func (ap allowPackages) isAllowedPackage(pkg string) bool {

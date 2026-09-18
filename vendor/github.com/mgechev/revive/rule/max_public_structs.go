@@ -25,11 +25,6 @@ func (r *MaxPublicStructsRule) Configure(arguments lint.Arguments) error {
 		return nil
 	}
 
-	err := checkNumberOfArguments(1, arguments, r.Name())
-	if err != nil {
-		return err
-	}
-
 	maxStructs, ok := arguments[0].(int64) // Alt. non panicking version
 	if !ok {
 		return errors.New(`invalid value passed as argument number to the "max-public-structs" rule`)
@@ -81,8 +76,7 @@ type lintMaxPublicStructs struct {
 }
 
 func (w *lintMaxPublicStructs) Visit(n ast.Node) ast.Visitor {
-	switch v := n.(type) {
-	case *ast.TypeSpec:
+	if v, ok := n.(*ast.TypeSpec); ok {
 		name := v.Name.Name
 		first := string(name[0])
 		if strings.ToUpper(first) == first {

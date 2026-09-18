@@ -3,10 +3,11 @@ package rule
 import (
 	"go/ast"
 
+	"github.com/mgechev/revive/internal/astutils"
 	"github.com/mgechev/revive/lint"
 )
 
-// UseErrorsNewRule spots calls to fmt.Errorf that can be replaced by errors.New.
+// UseErrorsNewRule spots calls to [fmt.Errorf] that can be replaced by [errors.New].
 type UseErrorsNewRule struct{}
 
 // Apply applies the rule to given file.
@@ -39,7 +40,7 @@ func (w lintFmtErrorf) Visit(n ast.Node) ast.Visitor {
 		return w // not a function call
 	}
 
-	isFmtErrorf := isPkgDot(funcCall.Fun, "fmt", "Errorf")
+	isFmtErrorf := astutils.IsPkgDotName(funcCall.Fun, "fmt", "Errorf")
 	if !isFmtErrorf {
 		return w // not a call to fmt.Errorf
 	}

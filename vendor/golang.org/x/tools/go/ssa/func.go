@@ -13,6 +13,7 @@ import (
 	"go/token"
 	"go/types"
 	"io"
+	"iter"
 	"os"
 	"strings"
 
@@ -187,8 +188,7 @@ func targetedBlock(f *Function, tok token.Token) *BasicBlock {
 }
 
 // instrs returns an iterator that returns each reachable instruction of the SSA function.
-// TODO: return an iter.Seq once x/tools is on 1.23
-func (f *Function) instrs() func(yield func(i Instruction) bool) {
+func (f *Function) instrs() iter.Seq[Instruction] {
 	return func(yield func(i Instruction) bool) {
 		for _, block := range f.Blocks {
 			for _, instr := range block.Instrs {
@@ -386,6 +386,8 @@ func (f *Function) finishBody() {
 	f.results = nil    // (used by lifting)
 	f.deferstack = nil // (used by lifting)
 	f.vars = nil       // (used by lifting)
+
+	// clear out other function state (keep consistent with buildParamsOnly)
 	f.subst = nil
 
 	numberRegisters(f) // uses f.namedRegisters
@@ -666,7 +668,11 @@ func WriteFunction(buf *bytes.Buffer, f *Function) {
 			continue
 		}
 		n, _ := fmt.Fprintf(buf, "%d:", b.Index)
+		// (|predecessors|, |successors|, immediate dominator)
 		bmsg := fmt.Sprintf("%s P:%d S:%d", b.Comment, len(b.Preds), len(b.Succs))
+		if b.Idom() != nil {
+			bmsg = fmt.Sprintf("%s idom:%d", bmsg, b.Idom().Index)
+		}
 		fmt.Fprintf(buf, "%*s%s\n", punchcard-1-n-len(bmsg), "", bmsg)
 
 		if false { // CFG debugging
@@ -817,7 +823,7 @@ func blockExit(fn *Function, block *BasicBlock, pos token.Pos) *exit {
 	return e
 }
 
-// blockExit creates a new exit to a yield fn that returns the source function.
+// returnExit creates a new exit to a yield fn that returns the source function.
 func returnExit(fn *Function, pos token.Pos) *exit {
 	e := &exit{
 		id:   unique(fn),

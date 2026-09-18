@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/mgechev/revive/internal/astutils"
 	"github.com/mgechev/revive/lint"
 )
 
@@ -73,8 +74,7 @@ type lintUnhandledErrors struct {
 // Visit looks for statements that are function calls.
 // If the called function returns a value of type error a failure will be created.
 func (w *lintUnhandledErrors) Visit(node ast.Node) ast.Visitor {
-	switch n := node.(type) {
-	case *ast.ExprStmt:
+	if n, ok := node.(*ast.ExprStmt); ok {
 		fCall, ok := n.X.(*ast.CallExpr)
 		if !ok {
 			return nil // not a function call
@@ -123,7 +123,7 @@ func (w *lintUnhandledErrors) addFailure(n *ast.CallExpr) {
 func (w *lintUnhandledErrors) funcName(call *ast.CallExpr) string {
 	fn, ok := w.getFunc(call)
 	if !ok {
-		return gofmt(call.Fun)
+		return astutils.GoFmt(call.Fun)
 	}
 
 	name := fn.FullName()
@@ -151,8 +151,8 @@ func (*lintUnhandledErrors) isTypeError(t *types.Named) bool {
 }
 
 func (w *lintUnhandledErrors) returnsAnError(tt *types.Tuple) bool {
-	for i := 0; i < tt.Len(); i++ {
-		nt, ok := tt.At(i).Type().(*types.Named)
+	for v := range tt.Variables() {
+		nt, ok := v.Type().(*types.Named)
 		if ok && w.isTypeError(nt) {
 			return true
 		}

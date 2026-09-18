@@ -8,13 +8,13 @@ import (
 	"github.com/mgechev/revive/lint"
 )
 
-// Checkstyle is an implementation of the Formatter interface
+// Checkstyle is an implementation of the [lint.Formatter] interface
 // which formats the errors to Checkstyle-like format.
 type Checkstyle struct {
 	Metadata lint.FormatterMetadata
 }
 
-// Name returns the name of the formatter
+// Name returns the name of the formatter.
 func (*Checkstyle) Name() string {
 	return "checkstyle"
 }
@@ -43,7 +43,7 @@ func (*Checkstyle) Format(failures <-chan lint.Failure, config lint.Config) (str
 			Severity:   severity(config, failure),
 			RuleName:   failure.RuleName,
 		}
-		fn := failure.GetFilename()
+		fn := failure.Filename()
 		if issues[fn] == nil {
 			issues[fn] = []issue{}
 		}

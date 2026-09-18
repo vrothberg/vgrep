@@ -1,53 +1,41 @@
 package rule
 
 import (
-	"bytes"
-	"fmt"
 	"go/ast"
-	"go/printer"
 	"go/token"
 	"regexp"
+	"strings"
 
+	"github.com/mgechev/revive/internal/astutils"
 	"github.com/mgechev/revive/lint"
 )
 
+// exitFuncChecker is a function type that checks whether a function call is an exit function.
+type exitFuncChecker func(args []ast.Expr) bool
+
+var alwaysTrue exitFuncChecker = func([]ast.Expr) bool { return true }
+
 // exitFunctions is a map of std packages and functions that are considered as exit functions.
-var exitFunctions = map[string]map[string]bool{
-	"os":      {"Exit": true},
-	"syscall": {"Exit": true},
+var exitFunctions = map[string]map[string]exitFuncChecker{
+	"os":      {"Exit": alwaysTrue},
+	"syscall": {"Exit": alwaysTrue},
 	"log": {
-		"Fatal":   true,
-		"Fatalf":  true,
-		"Fatalln": true,
-		"Panic":   true,
-		"Panicf":  true,
-		"Panicln": true,
+		"Fatal":   alwaysTrue,
+		"Fatalf":  alwaysTrue,
+		"Fatalln": alwaysTrue,
+		"Panic":   alwaysTrue,
+		"Panicf":  alwaysTrue,
+		"Panicln": alwaysTrue,
 	},
-}
-
-func isCgoExported(f *ast.FuncDecl) bool {
-	if f.Recv != nil || f.Doc == nil {
-		return false
-	}
-
-	cgoExport := regexp.MustCompile(fmt.Sprintf("(?m)^//export %s$", regexp.QuoteMeta(f.Name.Name)))
-	for _, c := range f.Doc.List {
-		if cgoExport.MatchString(c.Text) {
-			return true
-		}
-	}
-	return false
-}
-
-func isIdent(expr ast.Expr, ident string) bool {
-	id, ok := expr.(*ast.Ident)
-	return ok && id.Name == ident
-}
-
-// isPkgDot checks if the expression is <pkg>.<name>
-func isPkgDot(expr ast.Expr, pkg, name string) bool {
-	sel, ok := expr.(*ast.SelectorExpr)
-	return ok && isIdent(sel.X, pkg) && isIdent(sel.Sel, name)
+	"flag": {
+		"Parse": func([]ast.Expr) bool { return true },
+		"NewFlagSet": func(args []ast.Expr) bool {
+			if len(args) != 2 {
+				return false
+			}
+			return astutils.IsPkgDotName(args[1], "flag", "ExitOnError")
+		},
+	},
 }
 
 func srcLine(src []byte, p token.Position) string {
@@ -62,54 +50,40 @@ func srcLine(src []byte, p token.Position) string {
 	return string(src[lo:hi])
 }
 
-// pick yields a list of nodes by picking them from a sub-ast with root node n.
-// Nodes are selected by applying the fselect function
-func pick(n ast.Node, fselect func(n ast.Node) bool) []ast.Node {
-	var result []ast.Node
-
-	if n == nil {
-		return result
-	}
-
-	onSelect := func(n ast.Node) {
-		result = append(result, n)
-	}
-	p := picker{fselect: fselect, onSelect: onSelect}
-	ast.Walk(p, n)
-	return result
+// isRuleOption returns true if arg and name are the same after normalization.
+func isRuleOption(arg, name string) bool {
+	return normalizeRuleOption(arg) == normalizeRuleOption(name)
 }
 
-type picker struct {
-	fselect  func(n ast.Node) bool
-	onSelect func(n ast.Node)
+// normalizeRuleOption returns an option name from the argument. It is lowercased and without hyphens.
+//
+// Example: normalizeRuleOption("allowTypesBefore"), normalizeRuleOption("allow-types-before") -> "allowtypesbefore".
+func normalizeRuleOption(arg string) string {
+	return strings.ToLower(strings.ReplaceAll(arg, "-", ""))
 }
 
-func (p picker) Visit(node ast.Node) ast.Visitor {
-	if p.fselect == nil {
-		return nil
-	}
+var normalizePathReplacer = strings.NewReplacer("-", "", "_", "", ".", "")
 
-	if p.fselect(node) {
-		p.onSelect(node)
-	}
-
-	return p
+// normalizePath removes hyphens, underscores, and dots from the name
+//
+// Example: normalizePath("foo.bar-_buz") -> "foobarbuz".
+func normalizePath(name string) string {
+	return normalizePathReplacer.Replace(name)
 }
 
-// gofmt returns a string representation of an AST subtree.
-func gofmt(x any) string {
-	buf := bytes.Buffer{}
-	fs := token.NewFileSet()
-	printer.Fprint(&buf, fs, x)
-	return buf.String()
-}
-
-// checkNumberOfArguments fails if the given number of arguments is not, at least, the expected one
-func checkNumberOfArguments(expected int, args lint.Arguments, ruleName string) error {
-	if len(args) < expected {
-		return fmt.Errorf("not enough arguments for %s rule, expected %d, got %d. Please check the rule's documentation", ruleName, expected, len(args))
+// isVersionPath checks if a directory name is a version directory (v1, V2, etc.)
+func isVersionPath(name string) bool {
+	if len(name) < 2 || (name[0] != 'v' && name[0] != 'V') {
+		return false
 	}
-	return nil
+
+	for i := 1; i < len(name); i++ {
+		if name[i] < '0' || name[i] > '9' {
+			return false
+		}
+	}
+
+	return true
 }
 
 var directiveCommentRE = regexp.MustCompile("^//(line |extern |export |[a-z0-9]+:[a-z0-9])") // see https://go-review.googlesource.com/c/website/+/442516/1..2/_content/doc/comment.md#494
@@ -119,11 +93,21 @@ func isDirectiveComment(line string) bool {
 }
 
 // isCallToExitFunction checks if the function call is a call to an exit function.
-func isCallToExitFunction(pkgName, functionName string) bool {
-	return exitFunctions[pkgName] != nil && exitFunctions[pkgName][functionName]
+func isCallToExitFunction(pkgName, functionName string, callArgs []ast.Expr) bool {
+	m, ok := exitFunctions[pkgName]
+	if !ok {
+		return false
+	}
+
+	check, ok := m[functionName]
+	if !ok {
+		return false
+	}
+
+	return check(callArgs)
 }
 
-// newInternalFailureError returns a slice of Failure with a single internal failure in it
+// newInternalFailureError returns a slice of Failure with a single internal failure in it.
 func newInternalFailureError(e error) []lint.Failure {
 	return []lint.Failure{lint.NewInternalFailure(e.Error())}
 }
