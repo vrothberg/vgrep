@@ -70,7 +70,7 @@ deps:
 
 .PHONY: check
 check: $(GO_SRC)
-	$(GO) run github.com/golangci/golangci-lint/cmd/golangci-lint run
+	$(GO) run github.com/golangci/golangci-lint/v2/cmd/golangci-lint run
 
 .PHONY: test
 test: test-integration

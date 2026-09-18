@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go/ast"
 
+	"github.com/mgechev/revive/internal/astutils"
 	"github.com/mgechev/revive/lint"
 )
 
@@ -69,8 +70,8 @@ func (r *EnforceRepeatedArgTypeStyleRule) Configure(arguments lint.Arguments) er
 		r.funcRetValStyle = valstyle
 	case map[string]any: // expecting map[string]string
 		for k, v := range funcArgStyle {
-			switch k {
-			case "funcArgStyle":
+			switch {
+			case isRuleOption(k, "funcArgStyle"):
 				val, ok := v.(string)
 				if !ok {
 					return fmt.Errorf("invalid map value type for 'enforce-repeated-arg-type-style' rule. Expecting string, got %T", v)
@@ -80,7 +81,7 @@ func (r *EnforceRepeatedArgTypeStyleRule) Configure(arguments lint.Arguments) er
 					return err
 				}
 				r.funcArgStyle = valstyle
-			case "funcRetValStyle":
+			case isRuleOption(k, "funcRetValStyle"):
 				val, ok := v.(string)
 				if !ok {
 					return fmt.Errorf("invalid map value '%v' for 'enforce-repeated-arg-type-style' rule. Expecting string, got %T", v, v)
@@ -111,8 +112,7 @@ func (r *EnforceRepeatedArgTypeStyleRule) Apply(file *lint.File, _ lint.Argument
 
 	astFile := file.AST
 	ast.Inspect(astFile, func(n ast.Node) bool {
-		switch fn := n.(type) {
-		case *ast.FuncDecl:
+		if fn, ok := n.(*ast.FuncDecl); ok {
 			switch r.funcArgStyle {
 			case enforceRepeatedArgTypeStyleTypeFull:
 				if fn.Type.Params != nil {
@@ -131,8 +131,8 @@ func (r *EnforceRepeatedArgTypeStyleRule) Apply(file *lint.File, _ lint.Argument
 				if fn.Type.Params != nil {
 					var prevType ast.Expr
 					for _, field := range fn.Type.Params.List {
-						prevTypeStr := gofmt(prevType)
-						currentTypeStr := gofmt(field.Type)
+						prevTypeStr := astutils.GoFmt(prevType)
+						currentTypeStr := astutils.GoFmt(field.Type)
 						if currentTypeStr == prevTypeStr {
 							failures = append(failures, lint.Failure{
 								Confidence: 1,
@@ -164,8 +164,8 @@ func (r *EnforceRepeatedArgTypeStyleRule) Apply(file *lint.File, _ lint.Argument
 				if fn.Type.Results != nil {
 					var prevType ast.Expr
 					for _, field := range fn.Type.Results.List {
-						prevTypeStr := gofmt(prevType)
-						currentTypeStr := gofmt(field.Type)
+						prevTypeStr := astutils.GoFmt(prevType)
+						currentTypeStr := astutils.GoFmt(field.Type)
 						if field.Names != nil && currentTypeStr == prevTypeStr {
 							failures = append(failures, lint.Failure{
 								Confidence: 1,

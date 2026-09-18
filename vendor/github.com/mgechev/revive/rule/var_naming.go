@@ -4,18 +4,13 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
-	"regexp"
 	"strings"
 
+	"github.com/mgechev/revive/internal/astutils"
+	"github.com/mgechev/revive/internal/rule"
 	"github.com/mgechev/revive/lint"
+	"github.com/mgechev/revive/logging"
 )
-
-var anyCapsRE = regexp.MustCompile(`[A-Z]`)
-
-var allCapsRE = regexp.MustCompile(`^[A-Z0-9_]+$`)
-
-// regexp for constant names like `SOME_CONST`, `SOME_CONST_2`, `X123_3`, `_SOME_PRIVATE_CONST` (#851, #865)
-var upperCaseConstRE = regexp.MustCompile(`^_?[A-Z][A-Z\d]*(_[A-Z\d]+)*$`)
 
 var knownNameExceptions = map[string]bool{
 	"LastInsertId": true, // must match database/sql
@@ -24,10 +19,11 @@ var knownNameExceptions = map[string]bool{
 
 // VarNamingRule lints the name of a variable.
 type VarNamingRule struct {
-	allowList             []string
-	blockList             []string
-	allowUpperCaseConst   bool // if true - allows to use UPPER_SOME_NAMES for constants
-	skipPackageNameChecks bool
+	allowList []string
+	blockList []string
+
+	allowUpperCaseConst      bool // if true - allows to use UPPER_SOME_NAMES for constants
+	skipInitialismNameChecks bool // if true - disable enforcing capitals for common initialisms
 }
 
 // Configure validates the rule configuration, and configures the rule accordingly.
@@ -64,51 +60,51 @@ func (r *VarNamingRule) Configure(arguments lint.Arguments) error {
 		if !ok {
 			return fmt.Errorf("invalid third argument to the var-naming rule. Expecting a %s of type slice, of len==1, with map, but %T", "options", asSlice[0])
 		}
-		r.allowUpperCaseConst = fmt.Sprint(args["upperCaseConst"]) == "true"
-		r.skipPackageNameChecks = fmt.Sprint(args["skipPackageNameChecks"]) == "true"
+		for k, v := range args {
+			switch {
+			case isRuleOption(k, "skipInitialismNameChecks"):
+				r.skipInitialismNameChecks = fmt.Sprint(v) == "true"
+			case isRuleOption(k, "upperCaseConst"):
+				r.allowUpperCaseConst = fmt.Sprint(v) == "true"
+			case isRuleOption(k, "skipPackageNameChecks"):
+				logger, err := logging.GetLogger()
+				if err == nil {
+					logger.Warn("The option var-naming.skipPackageNameChecks is no longer supported and will be ignored; use package-naming rule instead")
+				}
+			case isRuleOption(k, "extraBadPackageNames"):
+				logger, err := logging.GetLogger()
+				if err == nil {
+					logger.Warn("The option var-naming.extraBadPackageNames is no longer supported and will be ignored; use package-naming.userDefinedBadNames instead")
+				}
+			case isRuleOption(k, "skipPackageNameCollisionWithGoStd"):
+				logger, err := logging.GetLogger()
+				if err == nil {
+					logger.Warn("The option var-naming.skipPackageNameCollisionWithGoStd is no longer supported and will be ignored; " +
+						"use package-naming.skipCollisionWithCommonStd instead (or package-naming.checkCollisionWithAllStd for the old 'all std' behavior)")
+				}
+			}
+		}
 	}
-	return nil
-}
 
-func (*VarNamingRule) applyPackageCheckRules(walker *lintNames) {
-	// Package names need slightly different handling than other names.
-	if strings.Contains(walker.fileAst.Name.Name, "_") && !strings.HasSuffix(walker.fileAst.Name.Name, "_test") {
-		walker.onFailure(lint.Failure{
-			Failure:    "don't use an underscore in package name",
-			Confidence: 1,
-			Node:       walker.fileAst.Name,
-			Category:   lint.FailureCategoryNaming,
-		})
-	}
-	if anyCapsRE.MatchString(walker.fileAst.Name.Name) {
-		walker.onFailure(lint.Failure{
-			Failure:    fmt.Sprintf("don't use MixedCaps in package name; %s should be %s", walker.fileAst.Name.Name, strings.ToLower(walker.fileAst.Name.Name)),
-			Confidence: 1,
-			Node:       walker.fileAst.Name,
-			Category:   lint.FailureCategoryNaming,
-		})
-	}
+	return nil
 }
 
 // Apply applies the rule to given file.
 func (r *VarNamingRule) Apply(file *lint.File, _ lint.Arguments) []lint.Failure {
 	var failures []lint.Failure
-
-	fileAst := file.AST
-
-	walker := lintNames{
-		file:      file,
-		fileAst:   fileAst,
-		allowList: r.allowList,
-		blockList: r.blockList,
-		onFailure: func(failure lint.Failure) {
-			failures = append(failures, failure)
-		},
-		upperCaseConst: r.allowUpperCaseConst,
+	onFailure := func(failure lint.Failure) {
+		failures = append(failures, failure)
 	}
 
-	if !r.skipPackageNameChecks {
-		r.applyPackageCheckRules(&walker)
+	fileAst := file.AST
+	walker := lintNames{
+		file:                 file,
+		fileAst:              fileAst,
+		onFailure:            onFailure,
+		allowList:            r.allowList,
+		blockList:            r.blockList,
+		skipInitialismChecks: r.skipInitialismNameChecks,
+		upperCaseConst:       r.allowUpperCaseConst,
 	}
 
 	ast.Walk(&walker, fileAst)
@@ -119,6 +115,16 @@ func (r *VarNamingRule) Apply(file *lint.File, _ lint.Arguments) []lint.Failure 
 // Name returns the rule name.
 func (*VarNamingRule) Name() string {
 	return "var-naming"
+}
+
+type lintNames struct {
+	file                 *lint.File
+	fileAst              *ast.File
+	onFailure            func(lint.Failure)
+	allowList            []string
+	blockList            []string
+	skipInitialismChecks bool
+	upperCaseConst       bool
 }
 
 func (w *lintNames) checkList(fl *ast.FieldList, thing string) {
@@ -142,12 +148,12 @@ func (w *lintNames) check(id *ast.Ident, thing string) {
 
 	// #851 upperCaseConst support
 	// if it's const
-	if thing == token.CONST.String() && w.upperCaseConst && upperCaseConstRE.MatchString(id.Name) {
+	if thing == token.CONST.String() && w.upperCaseConst && isUpperCaseConst(id.Name) {
 		return
 	}
 
 	// Handle two common styles from other languages that don't belong in Go.
-	if len(id.Name) >= 5 && allCapsRE.MatchString(id.Name) && strings.Contains(id.Name, "_") {
+	if isUpperUnderscore(id.Name) {
 		w.onFailure(lint.Failure{
 			Failure:    "don't use ALL_CAPS in Go names; use CamelCase",
 			Confidence: 0.8,
@@ -157,7 +163,7 @@ func (w *lintNames) check(id *ast.Ident, thing string) {
 		return
 	}
 
-	should := lint.Name(id.Name, w.allowList, w.blockList)
+	should := rule.Name(id.Name, w.allowList, w.blockList, w.skipInitialismChecks)
 	if id.Name == should {
 		return
 	}
@@ -177,15 +183,6 @@ func (w *lintNames) check(id *ast.Ident, thing string) {
 		Node:       id,
 		Category:   lint.FailureCategoryNaming,
 	})
-}
-
-type lintNames struct {
-	file           *lint.File
-	fileAst        *ast.File
-	onFailure      func(lint.Failure)
-	allowList      []string
-	blockList      []string
-	upperCaseConst bool
 }
 
 func (w *lintNames) Visit(n ast.Node) ast.Visitor {
@@ -217,7 +214,7 @@ func (w *lintNames) Visit(n ast.Node) ast.Visitor {
 		// Exclude naming warnings for functions that are exported to C but
 		// not exported in the Go API.
 		// See https://github.com/golang/lint/issues/144.
-		if ast.IsExported(v.Name.Name) || !isCgoExported(v) {
+		if ast.IsExported(v.Name.Name) || !astutils.IsCgoExported(v) {
 			w.check(v.Name, thing)
 		}
 
@@ -270,6 +267,87 @@ func (w *lintNames) Visit(n ast.Node) ast.Visitor {
 	return w
 }
 
+// isUpperCaseConst checks if a string is in constant name format like `SOME_CONST`, `SOME_CONST_2`,
+// `X123_3`, `_SOME_PRIVATE_CONST`.
+// See #851, #865.
+func isUpperCaseConst(s string) bool {
+	if s == "" {
+		return false
+	}
+	r := []rune(s)
+	c := r[0]
+	if len(r) == 1 {
+		return isUpper(c)
+	}
+	if c != '_' && !isUpper(c) { // Must start with an uppercase letter or underscore
+		return false
+	}
+	for i, c := range r {
+		switch {
+		case isUpperOrDigit(c):
+			continue
+		case c == '_':
+			// Underscore must be followed by at least one uppercase letter or digit
+			if i+1 >= len(s) || !isUpperOrDigit(r[i+1]) {
+				return false
+			}
+
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+// hasUpperCaseLetter checks if a string contains at least one upper case letter.
+func hasUpperCaseLetter(s string) bool {
+	for _, r := range s {
+		if isUpper(r) {
+			return true
+		}
+	}
+	return false
+}
+
+// isUpperOrDigit checks if a rune is an uppercase letter or digit.
+func isUpperOrDigit(r rune) bool {
+	return isUpper(r) || isDigit(r)
+}
+
+// isDigit checks if rune is a simple digit.
+//
+// We don't use [unicode.IsDigit] as it returns true for a large variety of digits that are not 0-9.
+func isDigit(r rune) bool {
+	return r >= '0' && r <= '9'
+}
+
+// isUpper checks if rune is ASCII upper case letter
+//
+// We restrict to A-Z because [unicode.IsUpper] returns true for a large variety of letters.
+func isUpper(r rune) bool {
+	return r >= 'A' && r <= 'Z'
+}
+
+// isUpperUnderscore detects variable that are made from upper case letters, underscore, or digits.
+//
+// Short variable names are considered OK.
+func isUpperUnderscore(s string) bool {
+	if !strings.Contains(s, "_") {
+		return false
+	}
+	if len(s) <= 5 {
+		// avoid false positives
+		return false
+	}
+	for _, r := range s {
+		if r == '_' || isUpperOrDigit(r) {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
 func getList(arg any, argName string) ([]string, error) {
 	args, ok := arg.([]any)
 	if !ok {
@@ -279,7 +357,7 @@ func getList(arg any, argName string) ([]string, error) {
 	for _, v := range args {
 		val, ok := v.(string)
 		if !ok {
-			return nil, fmt.Errorf("invalid %s values of the var-naming rule. Expecting slice of strings but got element of type %T", val, arg)
+			return nil, fmt.Errorf("invalid %v values of the var-naming rule. Expecting slice of strings but got element of type %T", v, arg)
 		}
 		list = append(list, val)
 	}

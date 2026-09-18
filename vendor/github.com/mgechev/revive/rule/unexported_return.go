@@ -9,12 +9,20 @@ import (
 	"github.com/mgechev/revive/lint"
 )
 
-// UnexportedReturnRule warns when a public return is from unexported type.
+// UnexportedReturnRule warns when a public function returns an unexported type.
 type UnexportedReturnRule struct{}
 
 // Apply applies the rule to given file.
 func (*UnexportedReturnRule) Apply(file *lint.File, _ lint.Arguments) []lint.Failure {
+	if !file.IsImportable() {
+		// Symbols defined in such files cannot be used in other packages.
+		// Therefore, we don't need to check for unexported return types.
+		return nil
+	}
+
 	var failures []lint.Failure
+
+	file.Pkg.TypeCheck()
 
 	for _, decl := range file.AST.Decls {
 		fn, ok := decl.(*ast.FuncDecl)
@@ -71,6 +79,17 @@ func (*UnexportedReturnRule) Name() string {
 // such as for composite types.
 func exportedType(typ types.Type) bool {
 	switch t := typ.(type) {
+	case *types.Alias:
+		obj := t.Obj()
+		switch {
+		// Builtin types have no package.
+		case obj.Pkg() == nil:
+		case obj.Exported():
+		default:
+			_, ok := t.Underlying().(*types.Interface)
+			return ok
+		}
+		return true
 	case *types.Named:
 		obj := t.Obj()
 		switch {
