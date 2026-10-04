@@ -85,9 +85,6 @@ vgrep supports the following commands:
 ### Tree
 ![](screenshots/vgrep-tree.png)
 
-### Files
-![](screenshots/vgrep-files.png)
-
 # fzf Integration
 
 ![](screenshots/vgrep-fzf.png)
