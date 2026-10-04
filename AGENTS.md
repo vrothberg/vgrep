@@ -21,3 +21,8 @@
 - Do not modify vendored code directly
 - Integration tests are bats scripts in `test/`; follow existing patterns in `test/simple.bats`
 - CLI flags are defined as struct tags on `cliArgs` in `vgrep.go` using `github.com/jessevdk/go-flags`
+
+## Commits
+
+- Keep commits small and incremental; one logical change per commit
+- Always use the `-s` flag to sign off commits (`git commit -s`)
