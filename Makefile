@@ -130,6 +130,10 @@ container-build: container-image
 container-release: container-image
 	$(CONTAINER_RUNTIME) $(CONTAINER_RUNCMD) $(CONTAINER_IMAGE) make release
 
+.PHONY: container-test
+container-test: container-image
+	$(CONTAINER_RUNTIME) $(CONTAINER_RUNCMD) $(CONTAINER_IMAGE) make build test
+
 .PHONY: container-shell
 container-shell: container-image
 	$(CONTAINER_RUNTIME) $(CONTAINER_RUNCMD) -it $(CONTAINER_IMAGE) sh
