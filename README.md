@@ -38,11 +38,11 @@ By default, the output will be written to `less` to make browsing large amounts 
 vgrep can open the indexed file locations in an editor specified by the `EDITOR` environment variable. Opening one of the file locations from the previous example may look as follows:
 
 ```
-$ export EDITOR=gedit
+$ export EDITOR=vim
 $ vgrep --show 4
 ```
 
-![](screenshots/vgrep-show-gedit.png)
+![](screenshots/vgrep-show-vim.png)
 
 The default editor of vgrep is `vim` with the default flag to open a file at a specific line being `+` followed by the line number.  If your editor of choice hits the rare case of a different syntax, use the `EDITORLINEFLAG` environment variable to adjust.  For example, a `kate` user may set the environment to ``EDITOR="kate"`` and ``EDITORLINEFLAG="-l"``.
 
