@@ -90,7 +90,7 @@ vgrep supports the following commands:
 
 # fzf Integration
 
-![](https://user-images.githubusercontent.com/7258858/103111382-b00c7f80-464c-11eb-9e47-c36ed89253a1.png)
+![](screenshots/vgrep-fzf.png)
 
 If you desire a more interactive experience than running vgrep twice to first search and then to open an editor, you may have a look at fzf. The below function uses [fzf](https://github.com/junegunn/fzf) to interactively search with vgrep and open your editor at the correct line with a single key press.
 To use it add the following function to your ``.bashrc`` and install fzf alongside vgrep and ripgrep.
