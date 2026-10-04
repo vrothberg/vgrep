@@ -26,7 +26,7 @@ All other flags and arguments are passed down to the underlying grep tool.  `vgr
 `vgrep` respects the `NO_COLOR` environment variable to suppress all ANSI color output (see https://no-color.org/).
 
 # Searching Patterns
-The basic functionality of vgrep is to perform textual searches. On a technical level, vgrep serves as a front-end to grep or git-grep when invoking vgrep inside a git tree and uses `less` for displaying the results.  All non-vgrep flags and arguments will be passed down to grep.  Results of the last search are cached, so running vgrep without a new query will load previous results and operate on them.
+The basic functionality of vgrep is to perform textual searches. On a technical level, vgrep serves as a front-end to grep or git-grep when invoking vgrep inside a git tree and uses `less` for displaying the results.  Results of the last search are cached, so running vgrep without a new query will load previous results and operate on them.
 
 An example call may look as follows:
 
@@ -61,7 +61,7 @@ vgrep command help: command[context lines] [selectors]
          selectors: '3' (single), '1,2,6' (multi), '1-8' (range), 'all'
           commands: print, show, context, tree, delete, keep, refine, files, grep, quit, ?
 ```
-vgrep commands can be passed directly to the ``--show/-s`` flag, for instance as ``--show c5 1-10`` to show the five context lines of the first ten matched lines.  Furthermore, the commands can be executed in an interactive shell via the ``--interactive/-i`` flag. Running ``vgrep --interactive`` will enter the shell directly, ``vgrep --show 1 --interactive`` will first open the first matched line in the editor and enter the interactive shell after.
+vgrep commands can be passed directly to the ``--show/-s`` flag, for instance as ``--show c5 1-10`` to show the five context lines of the first ten matched lines.  Furthermore, the commands can be executed in an interactive shell via the ``--interactive/-i`` flag. Running ``vgrep --interactive`` will enter the shell directly, ``vgrep --show 1 --interactive`` will first open the first matched line in the editor and enter the interactive shell afterward.
 
 vgrep supports the following commands:
 
