@@ -46,6 +46,12 @@ EOF
 	[[ ${lines[2]} =~ "six" ]]
 }
 
+@test "Interactive mode exits cleanly on EOF (Ctrl+D)" {
+	run_vgrep peanut $FILE > /dev/null
+	run_vgrep --interactive < /dev/null
+	[ "$status" -eq 0 ]
+}
+
 @test "Interactive mode and new grep search" {
 	run_vgrep my_pattern > /dev/null
 	run_vgrep --show "g -w peanut $FILE" \
