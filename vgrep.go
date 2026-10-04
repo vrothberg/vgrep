@@ -555,7 +555,7 @@ func (v *vgrep) cacheWriterHelper() error {
 	}
 	defer func() {
 		if err := v.lock.Unlock(); err != nil {
-			panic(fmt.Sprintf("Error releasing lock file: %v", err))
+			fmt.Fprintf(os.Stderr, "error releasing lock file: %v\n", err)
 		}
 	}()
 
@@ -606,7 +606,7 @@ func (v *vgrep) loadCache() error {
 	}
 	defer func() {
 		if err := v.lock.Unlock(); err != nil {
-			panic(fmt.Sprintf("Error releasing lock file: %v", err))
+			fmt.Fprintf(os.Stderr, "error releasing lock file: %v\n", err)
 		}
 	}()
 
