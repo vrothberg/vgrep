@@ -22,6 +22,8 @@ Note: `vgrep` is used to perform textual searches. On a technical level, vgrep s
 
 By default, the output will be written to less to make browsing large amounts of data more comfortable. vgrep --no-less will write to stdout.
 
+`vgrep` respects the `NO_COLOR` environment variable. When set to a non-empty value, all ANSI color codes are suppressed in vgrep's output and in the output of external search tools (grep, git-grep, ripgrep). See https://no-color.org/ for details on the convention.
+
 ## Opening Matches
 
 vgrep can open the indexed file locations in an editor specified by the `EDITOR` environment variable. Opening one of the file locations from the previous example may look as follows:

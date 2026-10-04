@@ -54,6 +54,7 @@ type cliArgs struct {
 // vgrep stores state and the user-specified command-line arguments.
 type vgrep struct {
 	cliArgs
+	NoColor  bool
 	exitCode int
 	matches  [][]string
 	workDir  string
@@ -138,6 +139,12 @@ func main() {
 		logrus.Debug("log level set to debug")
 	}
 
+	// Respect the NO_COLOR convention (see https://no-color.org/).
+	if val, ok := os.LookupEnv("NO_COLOR"); ok && val != "" {
+		v.NoColor = true
+		ansi.Disable()
+	}
+
 	logrus.Debugf("passed args: %s", args)
 
 	// Load the cache if there's no new query, otherwise execute a new one.
@@ -215,6 +222,9 @@ func (v *vgrep) runCommand(args []string, env string) ([]string, error) {
 	cmd.Stdout = &sout
 	cmd.Stderr = &serr
 	cmd.Env = []string{env}
+	if v.NoColor {
+		cmd.Env = append(cmd.Env, "NO_COLOR=1")
+	}
 
 	err := cmd.Run()
 	if err != nil {
@@ -299,9 +309,13 @@ func (v *vgrep) grep(args []string) {
 
 	if v.ripgrepInstalled() && !v.NoRipgrep {
 		cmd = []string{
-			"rg", "-0", "--colors=path:none", "--colors=line:none",
-			"--color=always", "--no-heading", "--line-number",
+			"rg", "-0", "--no-heading", "--line-number",
 			"--with-filename",
+		}
+		if v.NoColor {
+			cmd = append(cmd, "--color=never")
+		} else {
+			cmd = append(cmd, "--colors=path:none", "--colors=line:none", "--color=always")
 		}
 		cmd = append(cmd, args...)
 		greptype = RIPGrep
@@ -311,20 +325,27 @@ func (v *vgrep) grep(args []string) {
 		}
 	} else if v.insideGitTree() && !v.NoGit {
 		env = "HOME="
-		cmd = []string{
-			"git", "-c", "color.grep.match=red bold",
-			"grep", "-z", "-In", "--color=auto",
+		if v.NoColor {
+			cmd = []string{"git", "grep", "-z", "-In", "--color=never"}
+		} else {
+			cmd = []string{
+				"git", "-c", "color.grep.match=red bold",
+				"grep", "-z", "-In", "--color=auto",
+			}
 		}
 		cmd = append(cmd, args...)
 		greptype = GITGrep
 	} else if v.isOpenBSD() && v.getGrepType() == "" {
-		// grep --version = "grep version 0.9"
 		cmd = []string{"grep", "-ZHInr"}
 		cmd = append(cmd, args...)
 		greptype = BSDGrep
 	} else {
-		env = "GREP_COLORS='ms=01;31:mc=:sl=:cx=:fn=:ln=:se=:bn='"
-		cmd = []string{"grep", "-ZHInr", "--color=always"}
+		if v.NoColor {
+			cmd = []string{"grep", "-ZHInr", "--color=never"}
+		} else {
+			env = "GREP_COLORS='ms=01;31:mc=:sl=:cx=:fn=:ln=:se=:bn='"
+			cmd = []string{"grep", "-ZHInr", "--color=always"}
+		}
 		cmd = append(cmd, args...)
 		greptype = v.getGrepType()
 	}
