@@ -15,6 +15,17 @@ import (
 
 var ansiReg, _ = regexp.Compile("\x1B\\[[0-9;]*[ABCDEFGHJKSTfmnsulh]")
 
+var disabled bool
+
+// Disable turns off all ANSI formatting globally.
+func Disable() {
+	disabled = true
+}
+
+func enable() {
+	disabled = false
+}
+
 // COLOR is a numerical value representing ANSI colors.
 type COLOR int
 
@@ -43,7 +54,7 @@ const (
 func Color(str string, col COLOR, bright bool) string {
 	var code COLOR
 
-	if col == DEFAULT {
+	if disabled || col == DEFAULT {
 		return str
 	}
 
@@ -58,11 +69,17 @@ func Color(str string, col COLOR, bright bool) string {
 
 // Bold returns bold str.
 func Bold(str string) string {
+	if disabled {
+		return str
+	}
 	return "\033[1m" + str + "\033[0m"
 }
 
 // Underline returns underlined str.
 func Underline(str string) string {
+	if disabled {
+		return str
+	}
 	return "\033[4m" + str + "\033[0m"
 }
 
@@ -74,5 +91,8 @@ func RemoveANSI(str string) string {
 // ClearLine clears all characters from the cursor position to the end of the
 // line (including the character at the cursor position).
 func ClearLine() {
+	if disabled {
+		return
+	}
 	fmt.Printf("\033[K")
 }
