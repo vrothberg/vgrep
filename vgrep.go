@@ -7,7 +7,9 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -693,8 +695,11 @@ func (v *vgrep) commandParse() {
 	nextInput := func() string {
 		usrInp, err := line.Prompt("Enter a vgrep command: ")
 		if err != nil {
-			// Either we hit an error or EOF (ctrl+d)
 			_ = line.Close()
+			if errors.Is(err, io.EOF) || errors.Is(err, liner.ErrPromptAborted) {
+				fmt.Println()
+				os.Exit(0)
+			}
 			fmt.Fprintf(os.Stderr, "error parsing user input: %v\n", err)
 			os.Exit(1)
 		}
