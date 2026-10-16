@@ -8,7 +8,7 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/mattn/go-shellwords v1.0.16
 	github.com/nightlyone/lockfile v1.0.0
-	github.com/peterh/liner v1.2.2
+	github.com/peterh/liner v1.2.3
 	github.com/sirupsen/logrus v1.10.2
 	golang.org/x/term v0.46.0
 )
@@ -141,7 +141,7 @@ require (
 	github.com/matoous/godox v1.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.15 // indirect
 	github.com/mattn/go-isatty v0.0.22 // indirect
-	github.com/mattn/go-runewidth v0.0.24 // indirect
+	github.com/mattn/go-runewidth v0.0.31 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/mgechev/revive v1.17.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect

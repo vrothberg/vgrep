@@ -1,5 +1,4 @@
 //go:build windows || linux || darwin || openbsd || freebsd || netbsd || solaris
-// +build windows linux darwin openbsd freebsd netbsd solaris
 
 package liner
 
@@ -343,7 +342,7 @@ func (s *State) printedTabs(items []string) func(tabDirection) (string, error) {
 
 			numColumns, numRows, maxWidth := calculateColumns(s.columns, items)
 
-			for i := 0; i < numRows; i++ {
+			for i := range numRows {
 				for j := 0; j < numColumns*numRows; j += numRows {
 					if i+j < len(items) {
 						if maxWidth > 0 {
@@ -362,7 +361,7 @@ func (s *State) printedTabs(items []string) func(tabDirection) (string, error) {
 	}
 }
 
-func (s *State) tabComplete(p []rune, line []rune, pos int) ([]rune, int, interface{}, error) {
+func (s *State) tabComplete(p []rune, line []rune, pos int) ([]rune, int, any, error) {
 	if s.completer == nil {
 		return line, pos, rune(esc), nil
 	}
@@ -414,7 +413,7 @@ func (s *State) tabComplete(p []rune, line []rune, pos int) ([]rune, int, interf
 }
 
 // reverse intelligent search, implements a bash-like history search.
-func (s *State) reverseISearch(origLine []rune, origPos int) ([]rune, int, interface{}, error) {
+func (s *State) reverseISearch(origLine []rune, origPos int) ([]rune, int, any, error) {
 	p := "(reverse-i-search)`': "
 	err := s.refresh([]rune(p), origLine, origPos)
 	if err != nil {
@@ -548,7 +547,7 @@ func (s *State) addToKillRing(text []rune, mode int) {
 	s.killRing.Value = killLine
 }
 
-func (s *State) yank(p []rune, text []rune, pos int) ([]rune, int, interface{}, error) {
+func (s *State) yank(p []rune, text []rune, pos int) ([]rune, int, any, error) {
 	if s.killRing == nil {
 		return text, pos, rune(esc), nil
 	}
@@ -592,6 +591,11 @@ func (s *State) yank(p []rune, text []rune, pos int) ([]rune, int, interface{}, 
 // Prompt displays p and returns a line of user input, not including a trailing
 // newline character. An io.EOF error is returned if the user signals end-of-file
 // by pressing Ctrl-D. Prompt allows line editing if the terminal supports it.
+//
+// Prompts should be kept short. If a prompt does not leave sufficient working
+// space in the terminal (terminal columns < prompt width + 10), Prompt falls
+// back to unsupported mode where line editing is disabled and pressing Ctrl-C
+// raises SIGINT rather than being handled by Liner.
 func (s *State) Prompt(prompt string) (string, error) {
 	return s.PromptWithSuggestion(prompt, "", 0)
 }
@@ -601,6 +605,11 @@ func (s *State) Prompt(prompt string) (string, error) {
 // is negative or greater than length of text (in runes). Returns a line of user input, not
 // including a trailing newline character. An io.EOF error is returned if the user
 // signals end-of-file by pressing Ctrl-D.
+//
+// Prompts should be kept short. If a prompt does not leave sufficient working
+// space in the terminal (terminal columns < prompt width + 10), PromptWithSuggestion
+// falls back to unsupported mode where line editing is disabled and pressing
+// Ctrl-C raises SIGINT rather than being handled by Liner.
 func (s *State) PromptWithSuggestion(prompt string, text string, pos int) (string, error) {
 	for _, r := range prompt {
 		if unicode.Is(unicode.C, r) {
